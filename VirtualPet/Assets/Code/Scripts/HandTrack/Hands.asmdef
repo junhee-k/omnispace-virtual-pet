@@ -1,0 +1,24 @@
+{
+    "name": "NewAssembly",
+    "rootNamespace": "",
+    "references": [
+        "GUID:ce522b6ed64c8be4c989a1d26d0e3275",
+        "GUID:ae3d1603ce9534ff5a9eb62408568574",
+        "GUID:e40ba710768534012815d3193fa296cb"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.xr.hands",
+            "expression": "1.1.0",
+            "define": "UNITY_INCLUDE_XR_HANDS"
+        }
+    ],
+    "noEngineReferences": false
+}
