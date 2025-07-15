@@ -16,7 +16,6 @@ using Unity.PolySpatial.InputDevices;
 /// It ensures only one pet can be spawned at a time.
 /// Designed to work with input systems like Apple Vision Pro's gestures or standard UI buttons.
 /// </summary>
-[RequireComponent(typeof(ARRaycastManager))]
 [RequireComponent(typeof(ARPlaneManager))]
 public class PetSpawner : MonoBehaviour
 {
@@ -31,9 +30,6 @@ public class PetSpawner : MonoBehaviour
 
     // This will hold the pet instance once it's spawned.
     private GameObject spawnedPet;
-    
-    // Reference to the AR Raycast Manager component.
-    private ARRaycastManager arRaycastManager;
 
     // Reference to the AR Plane Manager component.
     private ARPlaneManager arPlaneManager;
@@ -45,11 +41,8 @@ public class PetSpawner : MonoBehaviour
 
     void Awake()
     {
-        // Get the ARRaycastManager component attached to this GameObject.
-        arRaycastManager = GetComponent<ARRaycastManager>();
         arPlaneManager = GetComponent<ARPlaneManager>();
         
-        // Ensure the placement indicator is inactive at the start.
         if (placementIndicator != null)
         {
             placementIndicator.SetActive(false);
@@ -83,23 +76,19 @@ public class PetSpawner : MonoBehaviour
                             line.transform.localScale = new Vector3(0.005f, 0.005f, lineLength);
                             Destroy(line, 1.0f); // Destroy the line after 1 second
                         }
+
                         RaycastHit hit;
                         if (Physics.Raycast(ray, out hit))
                         {
                             Debug.Log("Physics Raycast hit a collider: " + hit.collider.name);
-                            SpawnPet(hit.point);
+                            if(spawnedPet == null)
+                            {
+                                spawnedPet = Instantiate(petPrefab, hit.point, Quaternion.identity);
+                            }
                         }
                     }
                 }
             }
-        }
-    }
-
-    private void SpawnPet(Vector3 position)
-    {
-        if(spawnedPet == null)
-        {
-            spawnedPet = Instantiate(petPrefab, position, Quaternion.identity);
         }
     }
 }
