@@ -81,7 +81,7 @@ public class PetSpawner : MonoBehaviour
                         if (Physics.Raycast(ray, out hit))
                         {
                             Debug.Log("Physics Raycast hit a collider: " + hit.collider.name);
-                            if(spawnedPet == null)
+                            if (spawnedPet == null)
                             {
                                 spawnedPet = Instantiate(petPrefab, hit.point, Quaternion.identity);
                             }
