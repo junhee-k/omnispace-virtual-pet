@@ -35,16 +35,24 @@ namespace PolySpatial.Samples
 
         void Start()
         {
+            Debug.Log("PinchSpawn Start called");
             GetHandSubsystem();
+            Debug.Log("PinchSpawn Start called 2");
             m_ScaledThreshold = k_PinchThreshold / m_PolySpatialCameraTransform.localScale.x;
+            Debug.Log("PinchSpawn Start called 3");
         }
 
         void Update()
         {
+            Debug.Log("PinchSpawn Update called");
+
             if (!CheckHandSubsystem())
                 return;
 
+
             var updateSuccessFlags = m_HandSubsystem.TryUpdateHands(XRHandSubsystem.UpdateType.Dynamic);
+
+            Debug.Log("Update Success Flags: " + updateSuccessFlags);
 
             if ((updateSuccessFlags & XRHandSubsystem.UpdateSuccessFlags.RightHandRootPose) != 0)
             {
@@ -71,20 +79,36 @@ namespace PolySpatial.Samples
             if (xrGeneralSettings == null)
             {
                 Debug.LogError("XR general settings not set");
+                return; // Added return here
             }
+            Debug.Log("XR general settings found."); // Added log
 
             var manager = xrGeneralSettings.Manager;
             if (manager != null)
             {
+                Debug.Log("XRManagerSettings found."); // Added log
                 var loader = manager.activeLoader;
                 if (loader != null)
                 {
+                    Debug.Log("Active loader found."); // Added log
                     m_HandSubsystem = loader.GetLoadedSubsystem<XRHandSubsystem>();
                     if (!CheckHandSubsystem())
+                    {
+                        Debug.LogError("Hand Subsystem check failed immediately after loading."); // Added log
                         return;
+                    }
 
                     m_HandSubsystem.Start();
+                    Debug.Log("Hand Subsystem started successfully.");
                 }
+                else
+                {
+                    Debug.LogError("No active loader found."); // Added log
+                }
+            }
+            else
+            {
+                Debug.LogError("XRManagerSettings not found."); // Added log
             }
         }
 
@@ -114,6 +138,8 @@ namespace PolySpatial.Samples
             {
                 Vector3 indexPOS = Vector3.zero;
                 Vector3 thumbPOS = Vector3.zero;
+
+                Debug.Log("thumb: " + thumb.trackingState + ", index: " + index.trackingState);
 
                 if (index.TryGetPose(out Pose indexPose))
                 {
