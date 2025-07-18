@@ -2,17 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.AI;
 
 public class PetMoveVR : MonoBehaviour
 {
-    UnityEngine.AI.NavMeshAgent agent;
+    NavMeshAgent agent;
     [SerializeField] private Camera mainCamera;
     private Animator animator;
 
     // Start is called before the first frame update
     void Start()
     {
-        agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
     }
 
