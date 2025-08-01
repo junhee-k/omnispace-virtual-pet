@@ -2304,6 +2304,7 @@ GameObject:
   - component: {fileID: 8507438959298559293}
   - component: {fileID: -4963254627304455436}
   - component: {fileID: 4884865665766413504}
+  - component: {fileID: 7588430993921449747}
   m_Layer: 0
   m_Name: BrittanySpaniel
   m_TagString: Untagged
@@ -2321,7 +2322,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.75, y: 0.75, z: 0.75}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6034714633833335868}
@@ -2371,6 +2372,20 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
+--- !u!114 &7588430993921449747
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9033004810495813511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6292141359e1f403aa9789fb14f3b7b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mainCamera: {fileID: 0}
+  maxStepHeight: 1.5
 --- !u!1 &9092684493172486117
 GameObject:
   m_ObjectHideFlags: 0
