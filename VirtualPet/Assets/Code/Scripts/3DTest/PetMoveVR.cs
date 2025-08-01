@@ -1,33 +1,47 @@
+using UnityEngine;
+using UnityEngine.AI;
+using UnityEngine.InputSystem;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.AI;
+using System.Linq;
 
-public class PetMoveVR : MonoBehaviour
+[RequireComponent(typeof(NavMeshAgent))]
+public class ProactiveJumpPathfinder : MonoBehaviour
 {
-    NavMeshAgent agent;
-    [SerializeField] private Camera mainCamera;
+    private NavMeshAgent agent;
     private Animator animator;
+    [SerializeField] private Camera mainCamera;
 
-    // Start is called before the first frame update
+
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
+        if (mainCamera == null)
+        {
+            mainCamera = Camera.main;
+        }
     }
 
-    // Update is called once per frame
     void Update()
     {
-        animator.SetFloat("moveSpeed", agent.velocity.magnitude);
+        if (animator != null)
+        {
+            animator.SetFloat("moveSpeed", agent.velocity.magnitude);
+            
+            // Simple turn calculation
+            Vector3 desiredVelocity = agent.desiredVelocity.normalized;
+            Vector3 currentForward = transform.forward;
+            float turnVelocity = Vector3.Cross(currentForward, desiredVelocity).y;
+            
+            animator.SetFloat("turnVelocity", turnVelocity);
+        }
+
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
             Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit))
+            if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                Debug.Log(hit.point.x + " " + hit.point.y + " " + hit.point.z);
                 agent.SetDestination(hit.point);
             }
         }
