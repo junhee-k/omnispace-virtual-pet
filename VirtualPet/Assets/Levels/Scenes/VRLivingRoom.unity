@@ -165,6 +165,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -4963254627304455436, guid: 9963d202e9e1c4f74bf69ead095bccd4,
         type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 47f1d0e0bbc224a5cbe77e7b31cabdbc, type: 2}
+    - target: {fileID: -4963254627304455436, guid: 9963d202e9e1c4f74bf69ead095bccd4,
+        type: 3}
       propertyPath: m_ApplyRootMotion
       value: 1
       objectReference: {fileID: 0}
@@ -266,6 +271,18 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1841281878}
+    - targetCorrespondingSourceObject: {fileID: 9033004810495813511, guid: 9963d202e9e1c4f74bf69ead095bccd4,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1841281886}
+    - targetCorrespondingSourceObject: {fileID: 9033004810495813511, guid: 9963d202e9e1c4f74bf69ead095bccd4,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1841281885}
+    - targetCorrespondingSourceObject: {fileID: 9033004810495813511, guid: 9963d202e9e1c4f74bf69ead095bccd4,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1841281884}
   m_SourcePrefab: {fileID: 100100000, guid: 9963d202e9e1c4f74bf69ead095bccd4, type: 3}
 --- !u!1 &205958926
 GameObject:
@@ -1951,6 +1968,61 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &1841281884
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1841281873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb4094bdf44404cbf8ef9503e25b2b52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  behaviorRules: []
+  idleTimeout: 10
+  walkTimeout: 5
+  integrateWithMovement: 1
+  movementThreshold: 0.1
+  enableAutoBehaviors: 1
+  behaviorCheckInterval: 2
+  randomBehaviorChance: 0.1
+  showDebugLogs: 1
+  showDebugGUI: 1
+--- !u!114 &1841281885
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1841281873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ccd9bff2b2fc4be4abb41b38f45dfef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  stateAnimations: []
+  transitionAnimations: []
+  currentStateParameter: currentState
+  moveSpeedParameter: moveSpeed
+  turnVelocityParameter: turnVelocity
+  showDebugLogs: 1
+--- !u!114 &1841281886
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1841281873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e382c358683ea4c8697031b01c225fa0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentState: 0
+  isTransitioning: 0
+  showDebugLogs: 1
 --- !u!114 &1920074620
 MonoBehaviour:
   m_ObjectHideFlags: 0
