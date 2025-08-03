@@ -47,7 +47,12 @@ public class PetAnimationController : MonoBehaviour
     private PetActionStateMachine stateMachine;
     private Dictionary<PetActionState, StateAnimationData> stateAnimationMap;
     private Dictionary<(PetActionState, PetActionState), TransitionAnimationData> transitionAnimationMap;
-    private Coroutine currentTransitionCoroutine;
+    
+    // Sequential transition management
+    private List<PetActionState> currentTransitionPath;
+    private int currentPathIndex;
+    private bool isExecutingSequentialTransition = false;
+    private Coroutine currentAnimationCoroutine;
     
     public System.Action<PetActionState> OnAnimationStarted;
     public System.Action<PetActionState> OnAnimationCompleted;
@@ -68,8 +73,6 @@ public class PetAnimationController : MonoBehaviour
         {
             // Subscribe to state machine events
             stateMachine.OnStateChanged += HandleStateChanged;
-            stateMachine.OnTransitionStarted += HandleTransitionStarted;
-            stateMachine.OnTransitionCompleted += HandleTransitionCompleted;
             stateMachine.OnTransitionPathCalculated += HandleTransitionPathCalculated;
             
             // Set initial animation state
@@ -86,9 +89,12 @@ public class PetAnimationController : MonoBehaviour
         if (stateMachine != null)
         {
             stateMachine.OnStateChanged -= HandleStateChanged;
-            stateMachine.OnTransitionStarted -= HandleTransitionStarted;
-            stateMachine.OnTransitionCompleted -= HandleTransitionCompleted;
             stateMachine.OnTransitionPathCalculated -= HandleTransitionPathCalculated;
+        }
+        
+        if (currentAnimationCoroutine != null)
+        {
+            StopCoroutine(currentAnimationCoroutine);
         }
     }
 
@@ -146,19 +152,12 @@ public class PetAnimationController : MonoBehaviour
         if (showDebugLogs)
             Debug.Log($"Animation Controller: State changed from {fromState} to {toState}");
         
-        PlayStateAnimation(toState);
-    }
-
-    private void HandleTransitionStarted(PetActionState targetState)
-    {
-        if (showDebugLogs)
-            Debug.Log($"Animation Controller: Transition started to {targetState}");
-    }
-
-    private void HandleTransitionCompleted()
-    {
-        if (showDebugLogs)
-            Debug.Log($"Animation Controller: Transition completed");
+        // Only play animation if we're not in the middle of a sequential transition
+        // (sequential transitions handle their own animation playing)
+        if (!isExecutingSequentialTransition)
+        {
+            PlayStateAnimation(toState);
+        }
     }
 
     private void HandleTransitionPathCalculated(List<PetActionState> transitionPath)
@@ -169,12 +168,11 @@ public class PetAnimationController : MonoBehaviour
             Debug.Log($"Animation Controller: Transition path received: {pathString}");
         }
         
-        // Start playing transition animations for the path
-        if (currentTransitionCoroutine != null)
+        // Start sequential transition execution
+        if (transitionPath.Count > 1) // Only if there's actually a path to follow
         {
-            StopCoroutine(currentTransitionCoroutine);
+            StartSequentialTransition(transitionPath);
         }
-        currentTransitionCoroutine = StartCoroutine(PlayTransitionPath(transitionPath));
     }
 
     private void PlayStateAnimation(PetActionState state)
@@ -193,6 +191,8 @@ public class PetAnimationController : MonoBehaviour
             // Trigger the specific state animation
             if (!string.IsNullOrEmpty(animData.animationTrigger))
             {
+                // Only reset this specific trigger to prevent conflicts, but preserve others for multi-step transitions
+                animator.ResetTrigger(animData.animationTrigger);
                 animator.SetTrigger(animData.animationTrigger);
                 OnAnimationStarted?.Invoke(state);
                 
@@ -205,47 +205,157 @@ public class PetAnimationController : MonoBehaviour
             Debug.LogWarning($"No animation data found for state: {state}");
         }
     }
-
-    private IEnumerator PlayTransitionPath(List<PetActionState> path)
+    
+    private void ResetAllStateTriggers()
     {
-        for (int i = 1; i < path.Count; i++)
+        // Reset all state triggers to prevent conflicts
+        foreach (var stateData in stateAnimationMap.Values)
         {
-            PetActionState fromState = path[i - 1];
-            PetActionState toState = path[i];
-            
-            // Check if there's a custom transition animation
-            var transitionKey = (fromState, toState);
-            if (transitionAnimationMap.TryGetValue(transitionKey, out TransitionAnimationData transitionData) 
-                && transitionData.useCustomTransition)
+            if (!string.IsNullOrEmpty(stateData.animationTrigger))
             {
-                // Play custom transition animation
-                if (!string.IsNullOrEmpty(transitionData.transitionTrigger))
-                {
-                    animator.SetTrigger(transitionData.transitionTrigger);
-                    OnTransitionAnimationStarted?.Invoke(fromState, toState);
-                    
-                    if (showDebugLogs)
-                        Debug.Log($"Playing custom transition: {transitionData.transitionTrigger} ({fromState} → {toState})");
-                }
-                
-                yield return new WaitForSeconds(transitionData.transitionDuration);
-                OnTransitionAnimationCompleted?.Invoke(fromState, toState);
-            }
-            else
-            {
-                // Use default state animation timing
-                if (stateAnimationMap.TryGetValue(toState, out StateAnimationData stateData))
-                {
-                    yield return new WaitForSeconds(stateData.animationDuration);
-                }
-                else
-                {
-                    yield return new WaitForSeconds(0.5f); // Default timing
-                }
+                animator.ResetTrigger(stateData.animationTrigger);
             }
         }
         
-        currentTransitionCoroutine = null;
+        // Also reset any custom transition triggers that might be active
+        foreach (var transitionData in transitionAnimationMap.Values)
+        {
+            if (transitionData.useCustomTransition && !string.IsNullOrEmpty(transitionData.transitionTrigger))
+            {
+                animator.ResetTrigger(transitionData.transitionTrigger);
+            }
+        }
+    }
+
+    private void StartSequentialTransition(List<PetActionState> path)
+    {
+        // Stop any current animation
+        if (currentAnimationCoroutine != null)
+        {
+            StopCoroutine(currentAnimationCoroutine);
+        }
+        
+        // Reset all triggers at the start of a new sequential transition to clean slate
+        ResetAllStateTriggers();
+        
+        // Setup sequential transition
+        currentTransitionPath = new List<PetActionState>(path);
+        currentPathIndex = 0;
+        isExecutingSequentialTransition = true;
+        
+        if (showDebugLogs)
+        {
+            string pathString = string.Join(" → ", path);
+            Debug.Log($"Starting sequential transition: {pathString}");
+        }
+        
+        // Start with the first transition step
+        ExecuteNextTransitionStep();
+    }
+    
+    private void ExecuteNextTransitionStep()
+    {
+        if (currentTransitionPath == null || currentPathIndex >= currentTransitionPath.Count - 1)
+        {
+            // Transition complete
+            CompleteSequentialTransition();
+            return;
+        }
+        
+        PetActionState fromState = currentTransitionPath[currentPathIndex];
+        PetActionState toState = currentTransitionPath[currentPathIndex + 1];
+        
+        if (showDebugLogs)
+            Debug.Log($"Executing transition step: {fromState} → {toState}");
+        
+        // Play the animation for this step
+        PlayStepAnimation(fromState, toState);
+    }
+    
+    private void PlayStepAnimation(PetActionState fromState, PetActionState toState)
+    {
+        // Check if there's a custom transition animation
+        var transitionKey = (fromState, toState);
+        if (transitionAnimationMap.TryGetValue(transitionKey, out TransitionAnimationData transitionData) 
+            && transitionData.useCustomTransition)
+        {
+            // Play custom transition animation
+            if (!string.IsNullOrEmpty(transitionData.transitionTrigger))
+            {
+                // Only reset this specific trigger, not all triggers
+                animator.ResetTrigger(transitionData.transitionTrigger);
+                animator.SetTrigger(transitionData.transitionTrigger);
+                OnTransitionAnimationStarted?.Invoke(fromState, toState);
+                
+                if (showDebugLogs)
+                    Debug.Log($"Playing custom transition: {transitionData.transitionTrigger} ({fromState} → {toState})");
+            }
+            
+            // Wait for custom transition to complete
+            currentAnimationCoroutine = StartCoroutine(WaitForAnimationStep(transitionData.transitionDuration));
+        }
+        else
+        {
+            // Play the target state animation
+            PlayStateAnimation(toState);
+            
+            // Get duration from state animation data
+            float duration = 0.5f; // Default
+            if (stateAnimationMap.TryGetValue(toState, out StateAnimationData stateData))
+            {
+                duration = stateData.animationDuration;
+            }
+            
+            // Wait for state animation to complete
+            currentAnimationCoroutine = StartCoroutine(WaitForAnimationStep(duration));
+        }
+    }
+    
+    private IEnumerator WaitForAnimationStep(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        
+        // Animation step completed, advance to next state
+        AdvanceToNextState();
+    }
+    
+    private void AdvanceToNextState()
+    {
+        if (currentTransitionPath == null || !isExecutingSequentialTransition)
+            return;
+            
+        currentPathIndex++;
+        
+        // Force the state machine to advance to the next state in the path
+        if (currentPathIndex < currentTransitionPath.Count)
+        {
+            PetActionState nextState = currentTransitionPath[currentPathIndex];
+            
+            if (showDebugLogs)
+                Debug.Log($"Advancing state machine to: {nextState}");
+            
+            // Force set the state in the state machine
+            stateMachine.ForceSetState(nextState);
+        }
+        
+        // Continue with next step
+        ExecuteNextTransitionStep();
+    }
+    
+    private void CompleteSequentialTransition()
+    {
+        if (showDebugLogs)
+            Debug.Log("Sequential transition completed");
+        
+        isExecutingSequentialTransition = false;
+        currentTransitionPath = null;
+        currentPathIndex = 0;
+        
+        if (currentAnimationCoroutine != null)
+        {
+            StopCoroutine(currentAnimationCoroutine);
+            currentAnimationCoroutine = null;
+        }
     }
 
     // Public methods for external control
@@ -269,6 +379,8 @@ public class PetAnimationController : MonoBehaviour
     {
         if (animator != null && !string.IsNullOrEmpty(triggerName))
         {
+            // Only reset this specific trigger to prevent conflicts
+            animator.ResetTrigger(triggerName);
             animator.SetTrigger(triggerName);
             
             if (showDebugLogs)
@@ -286,6 +398,27 @@ public class PetAnimationController : MonoBehaviour
     {
         if (animator == null) return 0f;
         return animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
+    }
+    
+    public bool IsExecutingSequentialTransition()
+    {
+        return isExecutingSequentialTransition;
+    }
+    
+    public List<PetActionState> GetCurrentTransitionPath()
+    {
+        return currentTransitionPath != null ? new List<PetActionState>(currentTransitionPath) : null;
+    }
+    
+    public void StopCurrentTransition()
+    {
+        if (isExecutingSequentialTransition)
+        {
+            CompleteSequentialTransition();
+            
+            if (showDebugLogs)
+                Debug.Log("Sequential transition stopped manually");
+        }
     }
 
     // Debug method to show current animation info
