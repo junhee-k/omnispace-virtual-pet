@@ -6,6 +6,42 @@ using System.Collections.Generic;
 using System.Linq;
 using PetBehavior;
 
+// Command system for queued actions
+public abstract class PetCommand
+{
+    public abstract IEnumerator Execute(PetMoveVR controller);
+}
+
+public class StateTransitionCommand : PetCommand
+{
+    public PetActionState targetState;
+    
+    public StateTransitionCommand(PetActionState state)
+    {
+        targetState = state;
+    }
+    
+    public override IEnumerator Execute(PetMoveVR controller)
+    {
+        yield return controller.ExecuteStateTransition(targetState);
+    }
+}
+
+public class MovementCommand : PetCommand
+{
+    public Vector3 destination;
+    
+    public MovementCommand(Vector3 dest)
+    {
+        destination = dest;
+    }
+    
+    public override IEnumerator Execute(PetMoveVR controller)
+    {
+        yield return controller.ExecuteMovementCommand(destination);
+    }
+}
+
 [RequireComponent(typeof(NavMeshAgent))]
 public class PetMoveVR : MonoBehaviour
 {
@@ -15,6 +51,17 @@ public class PetMoveVR : MonoBehaviour
     
     private PetAnimationController animationController;
     private PetActionStateMachine stateMachine;
+    
+    // Command queue system
+    private Queue<PetCommand> commandQueue;
+    private bool isExecutingCommand = false;
+    private Coroutine commandExecutionCoroutine;
+    
+    // Movement readiness tracking
+    private bool isReadyForMovement = false;
+    
+    [Header("Debug")]
+    [SerializeField] private bool showDebugLogs = true;
 
 
     void Start()
@@ -23,6 +70,9 @@ public class PetMoveVR : MonoBehaviour
         animator = GetComponent<Animator>();
         animationController = GetComponent<PetAnimationController>();
         stateMachine = GetComponent<PetActionStateMachine>();
+        
+        // Initialize command queue
+        commandQueue = new Queue<PetCommand>();
         
         if (mainCamera == null)
         {
@@ -59,24 +109,47 @@ public class PetMoveVR : MonoBehaviour
         // Check if movement completed and transition back to Idle
         CheckMovementCompletion();
         HandleInput();
+        
+        // Update movement readiness
+        UpdateMovementReadiness();
+        
+        // Process command queue
+        ProcessCommandQueue();
     }
     
     private void CheckMovementCompletion()
     {
-        if (stateMachine == null || agent == null) return;
-        
-        // Only check if currently in Walk state
-        if (stateMachine.CurrentState == PetActionState.Walk)
+        // Movement completion is now handled entirely through animation blend tree
+        // No state transitions needed since walk is part of idle state
+    }
+    
+    private void UpdateMovementReadiness()
+    {
+        if (stateMachine == null || animationController == null)
         {
-            // Check if NavMeshAgent has reached its destination and stopped moving
-            bool hasReachedDestination = !agent.pathPending && agent.remainingDistance < 0.1f;
-            bool isNotMoving = agent.velocity.magnitude < 0.1f;
-            
-            if (hasReachedDestination && isNotMoving)
-            {
-                // Movement completed, return to Idle state
-                stateMachine.RequestStateChange(PetActionState.Idle);
-            }
+            isReadyForMovement = false;
+            return;
+        }
+        
+        bool wasReady = isReadyForMovement;
+        
+        // Simplified: Pet is ready for movement when:
+        // 1. State machine is in Idle state
+        // 2. Animation controller is not executing sequential transitions
+        // 3. Not currently executing any commands (to avoid conflicts)
+        isReadyForMovement = (stateMachine.CurrentState == PetActionState.Idle) &&
+                            !animationController.IsExecutingSequentialTransition() &&
+                            !stateMachine.IsTransitioning &&
+                            !isExecutingCommand;
+        
+        // Log readiness changes for debugging
+        if (wasReady != isReadyForMovement && showDebugLogs)
+        {
+            Debug.Log($"Movement readiness changed: {wasReady} → {isReadyForMovement} " +
+                     $"(State: {stateMachine.CurrentState}, " +
+                     $"SeqTrans: {animationController.IsExecutingSequentialTransition()}, " +
+                     $"StateTrans: {stateMachine.IsTransitioning}, " +
+                     $"ExecCmd: {isExecutingCommand})");
         }
     }
 
@@ -88,33 +161,8 @@ public class PetMoveVR : MonoBehaviour
             Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                // Store the movement destination for later use
                 Vector3 targetDestination = hit.point;
-                
-                if (stateMachine != null)
-                {
-                    // Check current state
-                    PetActionState currentState = stateMachine.CurrentState;
-                    
-                    // Check if pet needs to transition to Idle first
-                    if (currentState != PetActionState.Idle && currentState != PetActionState.Walk)
-                    {
-                        // Pet is in another state (Sit, Lying, Flat, Sleep, etc.) - transition to Idle first
-                        Debug.Log($"Movement input detected. Pet is in {currentState} state. Starting transition to Idle before movement.");
-                        StartCoroutine(TransitionToIdleAndMove(targetDestination));
-                    }
-                    else
-                    {
-                        // Pet is already in Idle or Walk - move immediately
-                        Debug.Log($"Movement input detected. Pet is in {currentState} state. Moving immediately.");
-                        ExecuteMovement(targetDestination);
-                    }
-                }
-                else
-                {
-                    // No state machine, just move
-                    agent.SetDestination(targetDestination);
-                }
+                QueueMovementCommand(targetDestination);
             }
         }
 
@@ -122,87 +170,180 @@ public class PetMoveVR : MonoBehaviour
         HandleBehaviorInput();
     }
     
-    private System.Collections.IEnumerator TransitionToIdleAndMove(Vector3 destination)
+    private void QueueMovementCommand(Vector3 destination)
     {
-        // Use state machine to handle the transition (which will use animation controller's sequential logic)
-        if (stateMachine != null)
+        if (stateMachine == null) return;
+        
+        PetActionState currentState = stateMachine.CurrentState;
+        
+        if (showDebugLogs)
+            Debug.Log($"Queuing movement command. Current state: {currentState}");
+        
+        // Queue transition to Idle first if not already in Idle
+        if (currentState != PetActionState.Idle)
         {
-            Debug.Log("Requesting transition to Idle state for movement...");
-            bool transitionStarted = stateMachine.RequestStateChange(PetActionState.Idle);
-            
-            if (!transitionStarted)
-            {
-                Debug.LogWarning("Failed to start transition to Idle state for movement");
-                yield break;
-            }
-            
-            Debug.Log("Transition started. Waiting for completion...");
-            
-            // Wait for the complete transition to finish
-            // This includes both state machine transitions and animation controller sequential transitions
-            while ((animationController != null && animationController.IsExecutingSequentialTransition()) ||
-                   stateMachine.IsTransitioning)
-            {
-                yield return new WaitForSeconds(0.1f);
-            }
-            
-            Debug.Log("All transitions completed.");
-            
-            // Ensure we actually reached Idle state
-            PetActionState finalState = stateMachine.CurrentState;
-            if (finalState != PetActionState.Idle)
-            {
-                Debug.LogWarning($"Expected to reach Idle state but ended up in {finalState}");
-                yield break;
-            }
+            commandQueue.Enqueue(new StateTransitionCommand(PetActionState.Idle));
+            if (showDebugLogs)
+                Debug.Log("Queued: Transition to Idle");
         }
-        else
+        
+        // Queue the movement command (movement now handled in Idle state via blend tree)
+        commandQueue.Enqueue(new MovementCommand(destination));
+        if (showDebugLogs)
+            Debug.Log("Queued: Movement command");
+    }
+    
+    private void ProcessCommandQueue()
+    {
+        // Start processing commands if we're not already executing and have commands queued
+        if (!isExecutingCommand && commandQueue.Count > 0)
         {
-            Debug.LogWarning("No state machine available for state transition");
+            // Check if the next command is a MovementCommand and if we're ready for movement
+            PetCommand nextCommand = commandQueue.Peek();
+            if (nextCommand is MovementCommand && !isReadyForMovement)
+            {
+                // Don't execute movement commands until ready
+                if (showDebugLogs)
+                    Debug.Log("Movement command queued but pet not ready for movement yet");
+                return;
+            }
+            
+            if (commandExecutionCoroutine != null)
+            {
+                StopCoroutine(commandExecutionCoroutine);
+            }
+            commandExecutionCoroutine = StartCoroutine(ExecuteNextCommand());
+        }
+    }
+    
+    private IEnumerator ExecuteNextCommand()
+    {
+        isExecutingCommand = true;
+        
+        while (commandQueue.Count > 0)
+        {
+            PetCommand command = commandQueue.Dequeue();
+            
+            if (showDebugLogs)
+                Debug.Log($"Executing command: {command.GetType().Name}");
+            
+            yield return command.Execute(this);
+            
+            // Small delay between commands to ensure proper state transitions
+            yield return new WaitForSeconds(0.1f);
+        }
+        
+        isExecutingCommand = false;
+        commandExecutionCoroutine = null;
+        
+        if (showDebugLogs)
+            Debug.Log("All commands in queue executed");
+    }
+    
+    // Public methods for command execution (called by command objects)
+    public IEnumerator ExecuteStateTransition(PetActionState targetState)
+    {
+        if (stateMachine == null) yield break;
+        
+        if (showDebugLogs)
+            Debug.Log($"Executing state transition to {targetState}");
+        
+        // Reset movement readiness during any state transition
+        isReadyForMovement = false;
+        
+        bool transitionStarted = stateMachine.RequestStateChange(targetState);
+        
+        if (!transitionStarted)
+        {
+            if (showDebugLogs)
+                Debug.LogWarning($"Failed to start transition to {targetState}");
             yield break;
         }
         
-        // Wait a brief moment to ensure everything is fully settled
-        yield return new WaitForSeconds(0.3f);
+        // Wait for transition to complete
+        while ((animationController != null && animationController.IsExecutingSequentialTransition()) ||
+               stateMachine.IsTransitioning)
+        {
+            yield return new WaitForSeconds(0.1f);
+        }
         
-        // Now execute the movement
-        Debug.Log("Starting movement execution...");
-        ExecuteMovement(destination);
+        // Additional wait for animation to settle if transitioning to Idle
+        if (targetState == PetActionState.Idle)
+        {
+            yield return new WaitForSeconds(0.5f);
+        }
+        
+        // Verify we reached the target state
+        if (stateMachine.CurrentState != targetState)
+        {
+            if (showDebugLogs)
+                Debug.LogWarning($"Expected to reach {targetState} but ended up in {stateMachine.CurrentState}");
+        }
+        else
+        {
+            if (showDebugLogs)
+                Debug.Log($"Successfully transitioned to {targetState}");
+        }
     }
     
-    private void ExecuteMovement(Vector3 destination)
+    public IEnumerator ExecuteMovementCommand(Vector3 destination)
     {
-        // Set the NavMesh destination
+        if (stateMachine == null || agent == null) yield break;
+        
+        // Only allow movement from Idle state
+        if (stateMachine.CurrentState != PetActionState.Idle)
+        {
+            if (showDebugLogs)
+                Debug.LogWarning($"Cannot execute movement from {stateMachine.CurrentState} state. Movement only allowed from Idle state.");
+            yield break;
+        }
+        
+        if (showDebugLogs)
+            Debug.Log($"Executing movement to {destination}");
+        
+        // Set NavMesh destination - movement handled via blend tree in Idle state
         agent.SetDestination(destination);
         
-        // Transition to Walk state if not already walking
-        if (stateMachine != null && stateMachine.CurrentState != PetActionState.Walk)
+        // Wait for movement to complete - stay in Idle state, animation blend tree handles walk
+        while (!agent.pathPending && agent.remainingDistance > 0.1f)
         {
-            stateMachine.RequestStateChange(PetActionState.Walk);
+            yield return new WaitForSeconds(0.2f);
         }
+        
+        // Wait a bit more for agent to fully stop
+        yield return new WaitForSeconds(0.5f);
+        
+        if (showDebugLogs)
+            Debug.Log("Movement command completed");
     }
 
     private void HandleBehaviorInput()
     {
         if (stateMachine == null) return;
 
-        // Number keys for quick behavior testing
+        // Number keys for quick behavior testing - now using queue system
         if (Keyboard.current.digit1Key.wasPressedThisFrame)
-            stateMachine.RequestStateChange(PetActionState.Idle);
+            QueueStateCommand(PetActionState.Idle);
         
         if (Keyboard.current.digit2Key.wasPressedThisFrame)
-            stateMachine.RequestStateChange(PetActionState.Sit);
+            QueueStateCommand(PetActionState.Sit);
         
         if (Keyboard.current.digit3Key.wasPressedThisFrame)
-            stateMachine.RequestStateChange(PetActionState.Lying);
+            QueueStateCommand(PetActionState.Lying);
         
         if (Keyboard.current.digit4Key.wasPressedThisFrame)
-            stateMachine.RequestStateChange(PetActionState.Flat);
+            QueueStateCommand(PetActionState.Flat);
         
         if (Keyboard.current.digit5Key.wasPressedThisFrame)
-            stateMachine.RequestStateChange(PetActionState.Sleep);
+            QueueStateCommand(PetActionState.Sleep);
         
-        if (Keyboard.current.digit6Key.wasPressedThisFrame)
-            stateMachine.RequestStateChange(PetActionState.Walk);
+        // Digit 6 key removed - Walk state no longer exists (handled via blend tree in Idle)
+    }
+    
+    private void QueueStateCommand(PetActionState targetState)
+    {
+        commandQueue.Enqueue(new StateTransitionCommand(targetState));
+        if (showDebugLogs)
+            Debug.Log($"Queued: State transition to {targetState}");
     }
 }

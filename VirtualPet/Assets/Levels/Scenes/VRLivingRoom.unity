@@ -1990,6 +1990,13 @@ MonoBehaviour:
   randomBehaviorChance: 0.1
   showDebugLogs: 1
   showDebugGUI: 1
+  stateMachine: {fileID: 0}
+  animationController: {fileID: 0}
+  navMeshAgent: {fileID: 0}
+  lastStateChangeTime: 0
+  lastMovementTime: 0
+  isUserControlled: 0
+  previousState: 0
 --- !u!114 &1841281885
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2002,7 +2009,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ccd9bff2b2fc4be4abb41b38f45dfef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stateAnimations: []
+  stateAnimations:
+  - state: 0
+    animationTrigger: idle
+    animationDuration: 0
+    isLooping: 1
+  - state: 1
+    animationTrigger: sit
+    animationDuration: 0
+    isLooping: 1
+  - state: 2
+    animationTrigger: lying
+    animationDuration: 0
+    isLooping: 1
+  - state: 3
+    animationTrigger: flat
+    animationDuration: 0
+    isLooping: 1
+  - state: 4
+    animationTrigger: sleep
+    animationDuration: 0
+    isLooping: 1
+  - state: 5
+    animationTrigger: walk
+    animationDuration: 0
+    isLooping: 0
   transitionAnimations: []
   currentStateParameter: currentState
   moveSpeedParameter: moveSpeed

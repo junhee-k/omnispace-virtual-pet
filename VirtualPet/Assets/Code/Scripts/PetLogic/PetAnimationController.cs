@@ -137,7 +137,7 @@ public class PetAnimationController : MonoBehaviour
                     state = state,
                     animationTrigger = state.ToString().ToLower(),
                     animationDuration = 1.0f,
-                    isLooping = state != PetActionState.Walk // Walk might not loop, others typically do
+                    isLooping = true // All states now loop since walk is handled as blend tree within idle
                 };
                 stateAnimationMap[state] = defaultData;
                 
@@ -404,6 +404,7 @@ public class PetAnimationController : MonoBehaviour
     {
         return isExecutingSequentialTransition;
     }
+    
     
     public List<PetActionState> GetCurrentTransitionPath()
     {

@@ -11,8 +11,7 @@ namespace PetBehavior
         Sit,
         Lying,
         Flat,
-        Sleep,
-        Walk
+        Sleep
     }
 
     [Serializable]
@@ -75,9 +74,9 @@ namespace PetBehavior
             }
             
             // Define connections based on your requirements
-            // Idle is connected to sit, flat, sleep, walk
+            // Idle is connected to sit, flat, sleep
             stateGraph[PetActionState.Idle].AddRange(new[] { 
-                PetActionState.Sit, PetActionState.Flat, PetActionState.Sleep, PetActionState.Walk 
+                PetActionState.Sit, PetActionState.Flat, PetActionState.Sleep 
             });
             
             // Sit is connected to idle, lying
@@ -98,11 +97,6 @@ namespace PetBehavior
             // Sleep is connected to idle, flat
             stateGraph[PetActionState.Sleep].AddRange(new[] { 
                 PetActionState.Idle, PetActionState.Flat 
-            });
-            
-            // Walk is connected to idle
-            stateGraph[PetActionState.Walk].AddRange(new[] { 
-                PetActionState.Idle 
             });
         }
 
