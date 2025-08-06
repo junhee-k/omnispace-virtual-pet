@@ -229,8 +229,12 @@ public class PetMoveVR : MonoBehaviour
             
             yield return command.Execute(this);
             
-            // Small delay between commands to ensure proper state transitions
-            yield return new WaitForSeconds(0.1f);
+            // Dynamic delay based on animation controller's timing
+            float dynamicDelay = GetDynamicCommandDelay();
+            if (showDebugLogs)
+                Debug.Log($"Waiting {dynamicDelay:F2}s between commands for proper transitions");
+            
+            yield return new WaitForSeconds(dynamicDelay);
         }
         
         isExecutingCommand = false;
@@ -238,6 +242,23 @@ public class PetMoveVR : MonoBehaviour
         
         if (showDebugLogs)
             Debug.Log("All commands in queue executed");
+    }
+    
+    private float GetDynamicCommandDelay()
+    {
+        if (animationController == null) return 0.1f; // Fallback
+        
+        // Special case: If we're in Idle state, use minimal delay for immediate responsiveness
+        if (stateMachine != null && stateMachine.CurrentState == PetActionState.Idle)
+        {
+            return 0.1f; // Minimal delay for Idle state
+        }
+        
+        // Use the animation controller's dynamic timing for other states
+        float delay = animationController.GetDynamicAnimationWaitTime();
+        
+        // Ensure minimum delay for system stability
+        return Mathf.Max(delay, 0.1f);
     }
     
     // Public methods for command execution (called by command objects)
@@ -267,10 +288,21 @@ public class PetMoveVR : MonoBehaviour
             yield return new WaitForSeconds(0.1f);
         }
         
-        // Additional wait for animation to settle if transitioning to Idle
-        if (targetState == PetActionState.Idle)
+        // Additional wait for animation to settle based on target state
+        if (animationController != null)
         {
-            yield return new WaitForSeconds(0.5f);
+            float settleTime = animationController.GetAnimationDurationForState(targetState);
+            if (showDebugLogs)
+                Debug.Log($"Waiting {settleTime:F2}s for {targetState} animation to settle");
+            yield return new WaitForSeconds(settleTime);
+        }
+        else
+        {
+            // Fallback for Idle state
+            if (targetState == PetActionState.Idle)
+            {
+                yield return new WaitForSeconds(0.5f);
+            }
         }
         
         // Verify we reached the target state

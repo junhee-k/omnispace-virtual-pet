@@ -299,12 +299,11 @@ public class PetAnimationController : MonoBehaviour
             // Play the target state animation
             PlayStateAnimation(toState);
             
-            // Get duration from state animation data
-            float duration = 0.5f; // Default
-            if (stateAnimationMap.TryGetValue(toState, out StateAnimationData stateData))
-            {
-                duration = stateData.animationDuration;
-            }
+            // Get duration from animator-based timing
+            float duration = GetAnimationDurationForState(toState);
+            
+            if (showDebugLogs)
+                Debug.Log($"Using dynamic duration {duration:F2}s for {toState} state animation");
             
             // Wait for state animation to complete
             currentAnimationCoroutine = StartCoroutine(WaitForAnimationStep(duration));
@@ -399,6 +398,154 @@ public class PetAnimationController : MonoBehaviour
         if (animator == null) return 0f;
         return animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
     }
+
+    public float GetCurrentAnimationDuration()
+    {
+        if (animator == null) return 0f;
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+        return stateInfo.length;
+    }
+    
+    public float GetAnimationDurationForState(PetActionState state)
+    {
+        if (animator == null) return 1.0f; // Default fallback
+        
+        // Special handling for Idle state with blend tree (contains walk animations)
+        if (state == PetActionState.Idle)
+        {
+            // For Idle state (which contains looping idle + walk blend tree), 
+            // don't wait for the loop - allow immediate transitions
+            return 0.1f; // Minimal wait time for immediate responsiveness
+        }
+        
+        // Priority 1: Try to get from Unity Animator if the state is currently playing
+        if (stateMachine != null && stateMachine.CurrentState == state)
+        {
+            AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            
+            // Handle blend trees and complex states
+            if (stateInfo.loop)
+            {
+                // For looping states, use a short reasonable wait time instead of full loop
+                return 0.3f;
+            }
+            else
+            {
+                // For non-looping states, use a reasonable portion of the clip length
+                // Instead of waiting for the full animation, use a shorter settle time
+                float clipLength = stateInfo.length;
+                return Mathf.Min(clipLength * 0.3f, 1.0f); // Max 1 second, or 30% of clip length
+            }
+        }
+        
+        // Priority 2: Try to get from configured animation data
+        if (stateAnimationMap.TryGetValue(state, out StateAnimationData stateData))
+        {
+            // Use reasonable durations instead of full animation lengths
+            if (!stateData.isLooping && stateData.animationDuration > 0)
+            {
+                // Cap configured durations to reasonable values for responsiveness
+                return Mathf.Min(stateData.animationDuration * 0.3f, 1.0f);
+            }
+        }
+        
+        // Fallback: reasonable default
+        return 0.5f;
+    }
+    
+    public float GetTransitionDuration(PetActionState fromState, PetActionState toState)
+    {
+        if (animator == null) return 0.5f; // Default fallback
+        
+        // Check if there's a custom transition animation configured
+        var transitionKey = (fromState, toState);
+        if (transitionAnimationMap.TryGetValue(transitionKey, out TransitionAnimationData transitionData))
+        {
+            if (transitionData.useCustomTransition)
+            {
+                return transitionData.transitionDuration;
+            }
+        }
+        
+        // If no custom transition, check if animator is currently in a transition
+        if (animator.IsInTransition(0))
+        {
+            AnimatorTransitionInfo transitionInfo = animator.GetAnimatorTransitionInfo(0);
+            return transitionInfo.duration;
+        }
+        
+        // Fallback: use the duration of the target state animation
+        return GetAnimationDurationForState(toState);
+    }
+    
+    public bool IsInTransition()
+    {
+        if (animator == null) return false;
+        return animator.IsInTransition(0);
+    }
+    
+    public float GetRemainingAnimationTime()
+    {
+        if (animator == null) return 0f;
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+        float normalizedTime = stateInfo.normalizedTime % 1.0f; // Handle looping
+        return stateInfo.length * (1.0f - normalizedTime);
+    }
+    
+    public float GetSequentialTransitionDuration(List<PetActionState> transitionPath)
+    {
+        if (transitionPath == null || transitionPath.Count <= 1) return 0f;
+        
+        float totalDuration = 0f;
+        
+        for (int i = 0; i < transitionPath.Count - 1; i++)
+        {
+            PetActionState fromState = transitionPath[i];
+            PetActionState toState = transitionPath[i + 1];
+            
+            totalDuration += GetTransitionDuration(fromState, toState);
+        }
+        
+        if (showDebugLogs)
+        {
+            string pathString = string.Join(" → ", transitionPath);
+            Debug.Log($"Sequential transition duration calculated: {totalDuration:F2}s for path {pathString}");
+        }
+        
+        return totalDuration;
+    }
+    
+    public float GetDynamicAnimationWaitTime()
+    {
+        if (animator == null) return 0.1f; // Default fallback
+        
+        // Special case: If we're in Idle state, don't wait for the loop
+        if (stateMachine != null && stateMachine.CurrentState == PetActionState.Idle)
+        {
+            return 0.1f; // Immediate responsiveness for Idle state
+        }
+        
+        // If we're in a transition, wait for it to complete (but cap it)
+        if (IsInTransition())
+        {
+            AnimatorTransitionInfo transitionInfo = animator.GetAnimatorTransitionInfo(0);
+            float remainingTransitionTime = transitionInfo.duration * (1.0f - transitionInfo.normalizedTime);
+            return Mathf.Clamp(remainingTransitionTime, 0.1f, 0.8f); // Cap at 0.8s max
+        }
+        
+        // For any other states, use reasonable wait times for responsiveness
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+        if (!stateInfo.loop)
+        {
+            // For non-looping animations, use a portion of remaining time, not the full duration
+            float remainingTime = GetRemainingAnimationTime();
+            float cappedTime = Mathf.Min(remainingTime * 0.3f, 0.8f); // 30% of remaining time, max 0.8s
+            return Mathf.Max(cappedTime, 0.1f); // Minimum 0.1s
+        }
+        
+        // For looping animations, use a short wait time
+        return 0.2f;
+    }
     
     public bool IsExecutingSequentialTransition()
     {
@@ -430,6 +577,32 @@ public class PetAnimationController : MonoBehaviour
         {
             var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
             Debug.Log($"Current Animation: {stateInfo.shortNameHash}, Time: {stateInfo.normalizedTime:F2}, Length: {stateInfo.length:F2}");
+            
+            if (IsInTransition())
+            {
+                var transitionInfo = animator.GetAnimatorTransitionInfo(0);
+                Debug.Log($"In Transition: Duration: {transitionInfo.duration:F2}s, Progress: {transitionInfo.normalizedTime:F2}");
+            }
+        }
+    }
+    
+    // Debug method to test dynamic duration system
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
+    public void LogDynamicTimingInfo()
+    {
+        if (showDebugLogs)
+        {
+            Debug.Log("=== Dynamic Timing System Info ===");
+            Debug.Log($"Current Animation Duration: {GetCurrentAnimationDuration():F2}s");
+            Debug.Log($"Dynamic Wait Time: {GetDynamicAnimationWaitTime():F2}s");
+            Debug.Log($"Is In Transition: {IsInTransition()}");
+            
+            if (stateMachine != null)
+            {
+                PetActionState currentState = stateMachine.CurrentState;
+                Debug.Log($"Current State: {currentState}");
+                Debug.Log($"Duration for {currentState}: {GetAnimationDurationForState(currentState):F2}s");
+            }
         }
     }
 
