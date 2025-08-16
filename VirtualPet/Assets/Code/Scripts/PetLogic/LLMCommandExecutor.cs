@@ -127,13 +127,14 @@ namespace PetBehavior
         {
             bool userInputDetected = false;
             
-            // Check keyboard inputs (1-6 keys for pet behaviors)
+            // Check keyboard inputs (1-6 keys for pet behaviors, C key for following)
             if (Keyboard.current.digit1Key.wasPressedThisFrame ||
                 Keyboard.current.digit2Key.wasPressedThisFrame ||
                 Keyboard.current.digit3Key.wasPressedThisFrame ||
                 Keyboard.current.digit4Key.wasPressedThisFrame ||
                 Keyboard.current.digit5Key.wasPressedThisFrame ||
-                Keyboard.current.digit6Key.wasPressedThisFrame)
+                Keyboard.current.digit6Key.wasPressedThisFrame ||
+                Keyboard.current.cKey.wasPressedThisFrame)
             {
                 userInputDetected = true;
             }

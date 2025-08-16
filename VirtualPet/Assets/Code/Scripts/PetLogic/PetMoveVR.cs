@@ -98,6 +98,25 @@ public class DurationBasedStateCommand : PetCommand
     }
 }
 
+public class FollowCameraCommand : PetCommand
+{
+    public Camera targetCamera;
+    public float minDistance;
+    public float updateInterval;
+    
+    public FollowCameraCommand(Camera camera, float minDist = 0.1f, float interval = 0.1f)
+    {
+        targetCamera = camera;
+        minDistance = minDist;
+        updateInterval = interval;
+    }
+    
+    public override IEnumerator Execute(PetMoveVR controller)
+    {
+        yield return controller.ExecuteFollowCameraCommand(targetCamera, minDistance, updateInterval);
+    }
+}
+
 [RequireComponent(typeof(NavMeshAgent))]
 public class PetMoveVR : MonoBehaviour
 {
@@ -132,6 +151,14 @@ public class PetMoveVR : MonoBehaviour
     
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = true;
+    
+    [Header("Camera Following")]
+    [SerializeField] private float followMinDistance = 0.1f;
+    [SerializeField] private float followUpdateInterval = 0.1f;
+    
+    // Following state management
+    private bool isFollowingCamera = false;
+    private Coroutine followCoroutine;
 
 
     void Start()
@@ -242,6 +269,9 @@ public class PetMoveVR : MonoBehaviour
     private void QueueMovementCommand(Vector3 destination)
     {
         if (stateMachine == null) return;
+        
+        // Stop following when user clicks to move
+        StopFollowing();
         
         PetActionState currentState = stateMachine.CurrentState;
         
@@ -452,11 +482,18 @@ public class PetMoveVR : MonoBehaviour
         if (Keyboard.current.digit5Key.wasPressedThisFrame)
             QueueStateCommandInternal(PetActionState.Sleep);
         
+        // C key for camera following mode
+        if (Keyboard.current.cKey.wasPressedThisFrame)
+            QueueFollowCameraCommand();
+        
         // Digit 6 key removed - Walk state no longer exists (handled via blend tree in Idle)
     }
     
     private void QueueStateCommandInternal(PetActionState targetState)
     {
+        // Stop following when user triggers other behaviors
+        StopFollowing();
+        
         commandQueue.Enqueue(new StateTransitionCommand(targetState));
     }
     
@@ -477,6 +514,30 @@ public class PetMoveVR : MonoBehaviour
         commandQueue.Enqueue(new LLMMovementCommand(destination, speedType, speed));
         if (showDebugLogs)
             Debug.Log($"[LLM] Queued: Movement command to {destination} at speed {speed} ({speedType}) [walkSpeed={walkSpeed}, runSpeed={runSpeed}]");
+    }
+    
+    private void QueueFollowCameraCommand()
+    {
+        // Force user control mode when C key is pressed
+        if (llmCommandExecutor != null)
+        {
+            llmCommandExecutor.ForceUserControl();
+        }
+        
+        // Stop any existing following
+        StopFollowing();
+        
+        // Ensure pet is in idle state for movement
+        if (stateMachine != null && stateMachine.CurrentState != PetActionState.Idle)
+        {
+            commandQueue.Enqueue(new StateTransitionCommand(PetActionState.Idle));
+        }
+        
+        // Queue the follow command
+        commandQueue.Enqueue(new FollowCameraCommand(mainCamera, followMinDistance, followUpdateInterval));
+        
+        if (showDebugLogs)
+            Debug.Log("[Follow] Camera following mode activated");
     }
     
     // ============= LLM INTEGRATION METHODS =============
@@ -582,6 +643,9 @@ public class PetMoveVR : MonoBehaviour
     
     private void OnLLMTakesControl()
     {
+        // Stop following when LLM takes control
+        StopFollowing();
+        
         if (showDebugLogs)
             Debug.Log("[LLM] LLM took control - ready for commands");
     }
@@ -641,6 +705,76 @@ public class PetMoveVR : MonoBehaviour
         
         if (showDebugLogs)
             Debug.Log($"[LLM] Duration-based state command completed");
+    }
+    
+    public IEnumerator ExecuteFollowCameraCommand(Camera targetCamera, float minDistance, float updateInterval)
+    {
+        if (targetCamera == null || agent == null)
+        {
+            if (showDebugLogs)
+                Debug.LogWarning("[Follow] Cannot execute follow command - missing camera or agent");
+            yield break;
+        }
+        
+        isFollowingCamera = true;
+        
+        if (showDebugLogs)
+            Debug.Log($"[Follow] Starting camera following with min distance {minDistance}m, update interval {updateInterval}s");
+        
+        while (isFollowingCamera && targetCamera != null)
+        {
+            Vector3 cameraPosition = targetCamera.transform.position;
+            float distanceToCamera = Vector3.Distance(transform.position, cameraPosition);
+            
+            // Only move if we're farther than the minimum distance
+            if (distanceToCamera > minDistance)
+            {
+                // Set destination to camera position
+                if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+                {
+                    agent.SetDestination(cameraPosition);
+                    
+                    if (showDebugLogs)
+                        Debug.Log($"[Follow] Moving to camera position {cameraPosition}, distance: {distanceToCamera:F2}m");
+                }
+            }
+            else
+            {
+                // Stop moving if we're close enough
+                if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+                {
+                    agent.ResetPath();
+                }
+            }
+            
+            yield return new WaitForSeconds(updateInterval);
+        }
+        
+        if (showDebugLogs)
+            Debug.Log("[Follow] Camera following stopped");
+    }
+    
+    private void StopFollowing()
+    {
+        if (isFollowingCamera)
+        {
+            isFollowingCamera = false;
+            
+            if (followCoroutine != null)
+            {
+                StopCoroutine(followCoroutine);
+                followCoroutine = null;
+            }
+            
+            // Stop agent movement
+            if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+            {
+                agent.ResetPath();
+            }
+            
+            if (showDebugLogs)
+                Debug.Log("[Follow] Following stopped");
+        }
     }
     
     public Vector3? GetRandomNavMeshPosition(float maxDistance)

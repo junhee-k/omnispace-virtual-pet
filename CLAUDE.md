@@ -23,6 +23,7 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 ### Testing and Debug Controls
 - **Pet behavior testing**: Number keys 1-5 in Play mode to trigger different behaviors (Idle, Sit, Lying, Flat, Sleep)
 - **Movement testing**: Left-click in scene view to make pet move to clicked location
+- **Camera following**: C key to make pet follow camera with automatic distance management (0.1m minimum)
 - **LLM command testing**: Write JSON commands to `Assets/Code/Scripts/LLMCommands.json` for AI-driven behavior
 - **Debug GUI**: Enable `showDebugLogs` in PetAnimationController, PetActionStateMachine, and LLMCommandExecutor for detailed logging
 
@@ -109,6 +110,7 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 **Critical Development Requirements**
 - Always bake NavMesh before testing pet movement (Window → AI → Navigation → Bake)
 - Test behavior transitions using number keys 1-5 in Play mode
+- Test camera following using C key (exits LLM control, follows camera with distance management)
 - Use XR Device Simulator for development without physical headset
 - Enable debug logging in PetAnimationController, PetActionStateMachine, and LLMCommandExecutor
 - Ensure LLMCommandExecutor is present in scene for AI command processing
