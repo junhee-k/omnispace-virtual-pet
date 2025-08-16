@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f43515ce8e05c45e8948eddfff64d435, type: 3}
+  m_Name: LLMConfig
+  m_EditorClassIdentifier: 
+  server: http://localhost:11434
+  model: llama3:8b-instruct-q4_K_M
+  stream: 0
