@@ -717,6 +717,9 @@ public class PetMoveVR : MonoBehaviour
         }
         
         isFollowingCamera = true;
+        Vector3 lastTargetPosition = Vector3.zero;
+        float pathUpdateThreshold = 0.8f; // Update path when camera moves this much
+        NavMeshPath currentPath = new NavMeshPath();
         
         if (showDebugLogs)
             Debug.Log($"[Follow] Starting camera following with min distance {minDistance}m, update interval {updateInterval}s");
@@ -724,26 +727,66 @@ public class PetMoveVR : MonoBehaviour
         while (isFollowingCamera && targetCamera != null)
         {
             Vector3 cameraPosition = targetCamera.transform.position;
-            float distanceToCamera = Vector3.Distance(transform.position, cameraPosition);
+            Vector3 groundCameraPosition = GetGroundPositionFromCamera(cameraPosition);
+            float distanceToCamera = Vector3.Distance(transform.position, groundCameraPosition);
+            float cameraMoveDistance = Vector3.Distance(groundCameraPosition, lastTargetPosition);
             
             // Only move if we're farther than the minimum distance
             if (distanceToCamera > minDistance)
             {
-                // Set destination to camera position
-                if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+                // Check if we need to update the path
+                bool shouldUpdatePath = false;
+                
+                if (!agent.hasPath)
                 {
-                    agent.SetDestination(cameraPosition);
-                    
-                    if (showDebugLogs)
-                        Debug.Log($"[Follow] Moving to camera position {cameraPosition}, distance: {distanceToCamera:F2}m");
+                    // No current path - create initial path
+                    shouldUpdatePath = true;
+                }
+                else if (cameraMoveDistance > pathUpdateThreshold)
+                {
+                    // Camera moved significantly - update path smoothly
+                    shouldUpdatePath = true;
+                }
+                else if (agent.remainingDistance < 1f && distanceToCamera > minDistance * 2f)
+                {
+                    // Close to completing path but still far from camera
+                    shouldUpdatePath = true;
+                }
+                
+                if (shouldUpdatePath && agent.isActiveAndEnabled && agent.isOnNavMesh)
+                {
+                    // Calculate new path to ground-projected camera position
+                    if (NavMesh.CalculatePath(transform.position, groundCameraPosition, NavMesh.AllAreas, currentPath))
+                    {
+                        if (currentPath.status == NavMeshPathStatus.PathComplete)
+                        {
+                            // Smoothly update the path instead of setting destination
+                            agent.SetPath(currentPath);
+                            lastTargetPosition = groundCameraPosition;
+                            
+                            if (showDebugLogs)
+                                Debug.Log($"[Follow] Updated path to {groundCameraPosition}, distance: {distanceToCamera:F2}m");
+                        }
+                        else
+                        {
+                            // Fallback to SetDestination if path calculation fails
+                            agent.SetDestination(groundCameraPosition);
+                            lastTargetPosition = groundCameraPosition;
+                            
+                            if (showDebugLogs)
+                                Debug.Log($"[Follow] Fallback destination to {groundCameraPosition}, path status: {currentPath.status}");
+                        }
+                    }
                 }
             }
             else
             {
                 // Stop moving if we're close enough
-                if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+                if (agent.isActiveAndEnabled && agent.isOnNavMesh && agent.hasPath)
                 {
                     agent.ResetPath();
+                    if (showDebugLogs)
+                        Debug.Log("[Follow] Stopped - within minimum distance");
                 }
             }
             
@@ -775,6 +818,25 @@ public class PetMoveVR : MonoBehaviour
             if (showDebugLogs)
                 Debug.Log("[Follow] Following stopped");
         }
+    }
+    
+    private Vector3 GetGroundPositionFromCamera(Vector3 cameraPosition)
+    {
+        // Simple: Use camera X/Z at pet's current Y level (assumes flat ground)
+        Vector3 groundPosition = new Vector3(cameraPosition.x, transform.position.y, cameraPosition.z);
+        
+        // Optional safety check: ensure it's on NavMesh
+        if (NavMesh.SamplePosition(groundPosition, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+        {
+            if (showDebugLogs)
+                Debug.Log($"[Follow] Projected camera to NavMesh: {cameraPosition} -> {hit.position}");
+            return hit.position;
+        }
+        
+        if (showDebugLogs)
+            Debug.Log($"[Follow] Using direct ground projection: {cameraPosition} -> {groundPosition}");
+        
+        return groundPosition; // Use it anyway - NavMeshAgent will find closest valid point
     }
     
     public Vector3? GetRandomNavMeshPosition(float maxDistance)
