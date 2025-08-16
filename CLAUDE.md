@@ -21,9 +21,10 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 - **Scene selection**: VRLivingRoom.unity for main testing, HandTrackTest.unity for hand interaction debugging
 
 ### Testing and Debug Controls
-- **Pet behavior testing**: Number keys 1-6 in Play mode to trigger different behaviors (Idle, Sit, Lying, Flat, Sleep, Walk)
+- **Pet behavior testing**: Number keys 1-5 in Play mode to trigger different behaviors (Idle, Sit, Lying, Flat, Sleep)
 - **Movement testing**: Left-click in scene view to make pet move to clicked location
-- **Debug GUI**: Enable `showDebugGUI` in PetBehaviorManager for runtime state inspection
+- **LLM command testing**: Write JSON commands to `Assets/Code/Scripts/LLMCommands.json` for AI-driven behavior
+- **Debug GUI**: Enable `showDebugLogs` in PetAnimationController, PetActionStateMachine, and LLMCommandExecutor for detailed logging
 
 ## Architecture Overview
 
@@ -31,15 +32,17 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 
 **State Machine Architecture (PetBehavior namespace)**
 - `PetActionStateMachine.cs`: BFS-based pathfinding between behavior states with graph representation
-- `PetBehaviorManager.cs`: Comprehensive behavior orchestration with rule-based triggers, queuing, and auto-behaviors
-- `PetAnimationController.cs`: Animation integration with state transitions
-- Uses graph theory for valid state transitions: Idle ↔ Sit ↔ Lying ↔ Sleep/Flat, Walk ↔ Idle
+- `PetAnimationController.cs`: Sequential transition system with dynamic timing and animation integration
+- Uses graph theory for valid state transitions: Idle ↔ Sit ↔ Lying ↔ Sleep/Flat
+- Walk behavior integrated into Idle state via blend tree (no separate Walk state)
 
-**Movement and Navigation (3DTest/)**
-- `PetMoveVR.cs`: Advanced NavMesh pathfinding with seamless behavior system integration
+**Movement and Command System (PetLogic/)**
+- `PetMoveVR.cs`: Advanced command queue system with LLM integration and NavMesh pathfinding
+- `LLMCommandExecutor.cs`: File-based AI command processing with focus management (User vs LLM control)
+- `LLMCommandLogger.cs`: Comprehensive logging system for debugging AI interactions
+- `LLMCommandDebugger.cs`: Inspector-based debugging tools for command testing
 - Automatic movement state detection and behavior synchronization
 - Mouse/touch input handling with user-controlled behavior override
-- Integrates with Unity's NavMesh Agent and Animator systems
 
 **Hand Tracking System (HandTrack/)**
 - `HandVisualizer.cs`: Real-time hand joint visualization for Vision Pro
@@ -85,8 +88,9 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 ### Code Architecture Patterns
 
 **Component Composition**
-- Pet entities use composition of PetBehaviorManager + PetActionStateMachine + PetAnimationController
-- Behavior system designed for extensibility with BehaviorRule configurations
+- Pet entities use composition of PetActionStateMachine + PetAnimationController + PetMoveVR
+- LLM integration via LLMCommandExecutor with automatic focus management
+- Command pattern implementation for queued behavior execution
 - Event-driven architecture with Action delegates for loose coupling
 
 **Platform Abstraction**
@@ -96,22 +100,25 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 
 **State Management**
 - Graph-based state transitions with BFS pathfinding for complex behavior chains
-- Queue system for behavior sequencing and priority handling
-- Auto-behavior system with configurable intervals and random triggers
+- Command queue system for behavior sequencing and priority handling
+- LLM-driven behavior with automatic User/AI focus switching
+- Dynamic animation timing system for responsive state transitions
 
 ## Development Guidelines
 
 **Critical Development Requirements**
 - Always bake NavMesh before testing pet movement (Window → AI → Navigation → Bake)
-- Test behavior transitions using number keys 1-6 in Play mode
+- Test behavior transitions using number keys 1-5 in Play mode
 - Use XR Device Simulator for development without physical headset
-- Enable debug GUI on PetBehaviorManager for behavior state monitoring
+- Enable debug logging in PetAnimationController, PetActionStateMachine, and LLMCommandExecutor
+- Ensure LLMCommandExecutor is present in scene for AI command processing
 
 **Code Integration Patterns**
 - Extend behavior system by adding states to PetActionState enum and updating state graph in PetActionStateMachine
-- Use BehaviorRule system for condition-based behavior triggers
-- Integrate with existing event system (OnStateChanged, OnBehaviorRequested, etc.)
+- Use command pattern for new behaviors: create classes inheriting from PetCommand
+- Integrate with existing event system (OnStateChanged, OnTransitionStarted, etc.)
 - Follow existing namespace structure (PetBehavior for state machine components)
+- LLM commands use JSON format: `{"action":"sit","duration":5.0,"target":"floor","speed":"walk"}`
 
 **Platform-Specific Development**
 - Hand tracking features require visionOS platform targeting or editor simulation
@@ -120,7 +127,35 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 - Verify XR settings in ProjectSettings for target platform compatibility
 
 **Performance Considerations**
-- Behavior system includes built-in cooldowns and timeout handling
+- Command queue system prevents overlapping behaviors and ensures smooth execution
+- Dynamic animation timing system optimizes transition delays for responsiveness
 - NavMesh pathfinding optimized for real-time navigation
+- LLM command processing includes comprehensive completion tracking to prevent blocking
 - URP pipeline configured for XR performance requirements
 - Hand tracking uses efficient joint caching and update patterns
+
+## LLM Integration System
+
+### Command Processing Architecture
+- **File-based Communication**: Monitor `Assets/Code/Scripts/LLMCommands.json` for external AI commands
+- **Focus Management**: Automatic switching between User Control (manual input) and LLM Control (AI-driven)
+- **Command Queue**: Asynchronous processing with completion tracking using reflection
+- **Timeout System**: Returns control to LLM after 10 seconds of user inactivity
+
+### Supported LLM Commands
+```json
+{"action":"idle"}                                    // Transition to idle state
+{"action":"sit","duration":5.0}                     // Sit for 5 seconds
+{"action":"lying"}                                   // Transition to lying state
+{"action":"flat"}                                    // Transition to flat state
+{"action":"sleep","duration":10.0}                  // Sleep for 10 seconds
+{"action":"walk","target":"floor","speed":"walk"}   // Walk to random floor location
+{"action":"run","target":"floor","speed":"run"}     // Run to random floor location
+```
+
+### LLM Development Workflow
+1. Write commands to `LLMCommands.json` file (automatically monitored every 0.5s)
+2. Commands are parsed and executed if LLM has control focus
+3. Comprehensive logging available in `Assets/Code/Scripts/Logs/LLMCommandLog.json`
+4. Use LLMCommandDebugger component for Inspector-based testing and debugging
+5. Monitor console logs with `[LLM]` prefix for detailed execution tracking
