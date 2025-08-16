@@ -12,15 +12,19 @@ using Unity.PolySpatial.InputDevices;
 public class PetMove : MonoBehaviour
 {
     NavMeshAgent agent;
+    private Animator animator;
     // Start is called before the first frame update
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
+        animator = GetComponent<Animator>();
+
     }
 
     // Update is called once per frame
     void Update()
     {
+        animator.SetFloat("moveSpeed", agent.velocity.magnitude);
         if (Touch.activeTouches.Count > 0)
         {
             foreach (Touch touch in Touch.activeTouches)
