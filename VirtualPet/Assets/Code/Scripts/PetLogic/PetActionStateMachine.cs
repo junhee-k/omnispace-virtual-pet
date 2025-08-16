@@ -59,8 +59,7 @@ namespace PetBehavior
 
         void Start()
         {
-            if (showDebugLogs)
-                Debug.Log($"Pet Action State Machine initialized. Current state: {currentState}");
+            // State machine initialized
         }
 
         private void InitializeStateGraph()
@@ -110,15 +109,11 @@ namespace PetBehavior
         {
             if (currentState == targetState)
             {
-                if (showDebugLogs)
-                    Debug.Log($"Already in target state: {targetState}");
                 return true;
             }
 
             if (isTransitioning)
             {
-                if (showDebugLogs)
-                    Debug.Log($"Cannot change state while transitioning. Current transition in progress.");
                 return false;
             }
 
@@ -130,11 +125,6 @@ namespace PetBehavior
                 return false;
             }
 
-            if (showDebugLogs)
-            {
-                string pathString = string.Join(" → ", path);
-                Debug.Log($"Transition path calculated: {pathString}");
-            }
 
             OnTransitionPathCalculated?.Invoke(path);
             StartCoroutine(ExecuteTransitionPath(path));
@@ -197,9 +187,6 @@ namespace PetBehavior
             {
                 PetActionState nextState = path[i];
                 
-                if (showDebugLogs)
-                    Debug.Log($"Transitioning: {currentState} → {nextState}");
-                
                 OnTransitionStarted?.Invoke(nextState);
                 
                 // Wait for animation or transition time
@@ -212,9 +199,6 @@ namespace PetBehavior
             
             isTransitioning = false;
             OnTransitionCompleted?.Invoke();
-            
-            if (showDebugLogs)
-                Debug.Log($"Transition completed. Final state: {currentState}");
         }
 
         public void ForceSetState(PetActionState state)
@@ -228,9 +212,6 @@ namespace PetBehavior
             PetActionState previousState = currentState;
             currentState = state;
             OnStateChanged?.Invoke(previousState, currentState);
-            
-            if (showDebugLogs)
-                Debug.Log($"Force set state: {previousState} → {currentState}");
         }
 
         public List<PetActionState> GetValidTransitions()
@@ -247,12 +228,6 @@ namespace PetBehavior
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
         public void LogStateGraph()
         {
-            Debug.Log("=== Pet Action State Graph ===");
-            foreach (var kvp in stateGraph)
-            {
-                string connections = string.Join(", ", kvp.Value);
-                Debug.Log($"{kvp.Key} → [{connections}]");
-            }
         }
 
         void OnValidate()

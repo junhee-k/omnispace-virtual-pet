@@ -279,10 +279,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1841281885}
-    - targetCorrespondingSourceObject: {fileID: 9033004810495813511, guid: 9963d202e9e1c4f74bf69ead095bccd4,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1841281884}
   m_SourcePrefab: {fileID: 100100000, guid: 9963d202e9e1c4f74bf69ead095bccd4, type: 3}
 --- !u!1 &205958926
 GameObject:
@@ -1877,6 +1873,75 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
+--- !u!1 &1654964489
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1654964492}
+  - component: {fileID: 1654964491}
+  - component: {fileID: 1654964490}
+  m_Layer: 0
+  m_Name: LLMManger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1654964490
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1654964489}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f6e383a2f22346eab987eea571dae34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  commandFileName: LLMCommands.json
+  fileCheckInterval: 0.5
+  userTimeoutSeconds: 10
+  focusIndicatorText: {fileID: 0}
+  showDebugLogs: 1
+--- !u!114 &1654964491
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1654964489}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cfee115f2bc9464eb493797e5b02f11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableLogging: 1
+  logToFile: 1
+  logToConsole: 1
+  maxLogEntries: 1000
+  logFileName: LLMCommandLog.json
+  showInInspector: 1
+  recentLogsDisplay: 
+--- !u!4 &1654964492
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1654964489}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1709433000
 GameObject:
   m_ObjectHideFlags: 0
@@ -1968,35 +2033,6 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &1841281884
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1841281873}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb4094bdf44404cbf8ef9503e25b2b52, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  behaviorRules: []
-  idleTimeout: 10
-  walkTimeout: 5
-  integrateWithMovement: 1
-  movementThreshold: 0.1
-  enableAutoBehaviors: 1
-  behaviorCheckInterval: 2
-  randomBehaviorChance: 0.1
-  showDebugLogs: 1
-  showDebugGUI: 1
-  stateMachine: {fileID: 0}
-  animationController: {fileID: 0}
-  navMeshAgent: {fileID: 0}
-  lastStateChangeTime: 0
-  lastMovementTime: 0
-  isUserControlled: 0
-  previousState: 0
 --- !u!114 &1841281885
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2130,3 +2166,4 @@ SceneRoots:
   - {fileID: 1114717612}
   - {fileID: 1709433002}
   - {fileID: 99692510}
+  - {fileID: 1654964492}

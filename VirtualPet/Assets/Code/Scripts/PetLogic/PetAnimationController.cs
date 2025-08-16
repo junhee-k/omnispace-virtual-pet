@@ -141,17 +141,13 @@ public class PetAnimationController : MonoBehaviour
                 };
                 stateAnimationMap[state] = defaultData;
                 
-                if (showDebugLogs)
-                    Debug.LogWarning($"Created default animation data for state: {state}");
+        Debug.LogWarning($"Created default animation data for state: {state}");
             }
         }
     }
 
     private void HandleStateChanged(PetActionState fromState, PetActionState toState)
     {
-        if (showDebugLogs)
-            Debug.Log($"Animation Controller: State changed from {fromState} to {toState}");
-        
         // Only play animation if we're not in the middle of a sequential transition
         // (sequential transitions handle their own animation playing)
         if (!isExecutingSequentialTransition)
@@ -162,11 +158,6 @@ public class PetAnimationController : MonoBehaviour
 
     private void HandleTransitionPathCalculated(List<PetActionState> transitionPath)
     {
-        if (showDebugLogs)
-        {
-            string pathString = string.Join(" → ", transitionPath);
-            Debug.Log($"Animation Controller: Transition path received: {pathString}");
-        }
         
         // Start sequential transition execution
         if (transitionPath.Count > 1) // Only if there's actually a path to follow
@@ -196,9 +187,7 @@ public class PetAnimationController : MonoBehaviour
                 animator.SetTrigger(animData.animationTrigger);
                 OnAnimationStarted?.Invoke(state);
                 
-                if (showDebugLogs)
-                    Debug.Log($"Playing animation trigger: {animData.animationTrigger} for state: {state}");
-            }
+}
         }
         else
         {
@@ -243,12 +232,6 @@ public class PetAnimationController : MonoBehaviour
         currentPathIndex = 0;
         isExecutingSequentialTransition = true;
         
-        if (showDebugLogs)
-        {
-            string pathString = string.Join(" → ", path);
-            Debug.Log($"Starting sequential transition: {pathString}");
-        }
-        
         // Start with the first transition step
         ExecuteNextTransitionStep();
     }
@@ -264,9 +247,6 @@ public class PetAnimationController : MonoBehaviour
         
         PetActionState fromState = currentTransitionPath[currentPathIndex];
         PetActionState toState = currentTransitionPath[currentPathIndex + 1];
-        
-        if (showDebugLogs)
-            Debug.Log($"Executing transition step: {fromState} → {toState}");
         
         // Play the animation for this step
         PlayStepAnimation(fromState, toState);
@@ -287,9 +267,7 @@ public class PetAnimationController : MonoBehaviour
                 animator.SetTrigger(transitionData.transitionTrigger);
                 OnTransitionAnimationStarted?.Invoke(fromState, toState);
                 
-                if (showDebugLogs)
-                    Debug.Log($"Playing custom transition: {transitionData.transitionTrigger} ({fromState} → {toState})");
-            }
+}
             
             // Wait for custom transition to complete
             currentAnimationCoroutine = StartCoroutine(WaitForAnimationStep(transitionData.transitionDuration));
@@ -303,7 +281,6 @@ public class PetAnimationController : MonoBehaviour
             float duration = GetAnimationDurationForState(toState);
             
             if (showDebugLogs)
-                Debug.Log($"Using dynamic duration {duration:F2}s for {toState} state animation");
             
             // Wait for state animation to complete
             currentAnimationCoroutine = StartCoroutine(WaitForAnimationStep(duration));
@@ -413,9 +390,19 @@ public class PetAnimationController : MonoBehaviour
         // Special handling for Idle state with blend tree (contains walk animations)
         if (state == PetActionState.Idle)
         {
-            // For Idle state (which contains looping idle + walk blend tree), 
-            // don't wait for the loop - allow immediate transitions
-            return 0.1f; // Minimal wait time for immediate responsiveness
+            // Check if we're transitioning FROM another state TO Idle
+            if (stateMachine != null && stateMachine.CurrentState != PetActionState.Idle)
+            {
+                // When transitioning TO Idle from another state, wait for proper transition
+                if (showDebugLogs)
+                    Debug.Log($"[Animation] Transitioning from {stateMachine.CurrentState} to Idle - waiting 1.5s for transition");
+                return 1.5f; // Allow time for the transition animation to complete
+            }
+            else
+            {
+                // When already in Idle state, allow immediate transitions
+                return 0.1f; // Minimal wait time for immediate responsiveness  
+            }
         }
         
         // Priority 1: Try to get from Unity Animator if the state is currently playing
