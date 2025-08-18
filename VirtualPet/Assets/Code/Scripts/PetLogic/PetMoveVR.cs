@@ -198,18 +198,23 @@ public class PetMoveVR : MonoBehaviour
         {
             animationController.SetMoveSpeed(agent.velocity.magnitude);
             
-            // Simple turn calculation
-            Vector3 desiredVelocity = agent.desiredVelocity.normalized;
-            Vector3 currentForward = transform.forward;
-            float turnVelocity = Vector3.Cross(currentForward, desiredVelocity).y;
-            
-            animationController.SetTurnVelocity(turnVelocity);
+            // Only apply movement turn velocity if not looking at user
+            if (!animationController.IsLookingAtUser)
+            {
+                // Simple turn calculation for movement
+                Vector3 desiredVelocity = agent.desiredVelocity.normalized;
+                Vector3 currentForward = transform.forward;
+                float turnVelocity = Vector3.Cross(currentForward, desiredVelocity).y;
+                
+                animationController.SetTurnVelocity(turnVelocity);
+            }
         }
         else if (animator != null)
         {
             // Fallback to direct animator control if no animation controller
             animator.SetFloat("moveSpeed", agent.velocity.magnitude);
             
+            // Note: Direct animator control doesn't have look-at priority system
             Vector3 desiredVelocity = agent.desiredVelocity.normalized;
             Vector3 currentForward = transform.forward;
             float turnVelocity = Vector3.Cross(currentForward, desiredVelocity).y;
@@ -635,8 +640,15 @@ public class PetMoveVR : MonoBehaviour
             agent.speed = defaultAgentSpeed;
         }
         
+        // Trigger look-at behavior when user takes control
+        if (animationController != null && mainCamera != null)
+        {
+            Vector3 cameraPosition = mainCamera.transform.position;
+            animationController.LookAtUser(cameraPosition);
+        }
+        
         if (showDebugLogs)
-            Debug.Log("[LLM] User took control - cleared command queue");
+            Debug.Log("[LLM] User took control - cleared command queue and triggered look-at");
     }
     
     private void OnLLMTakesControl()

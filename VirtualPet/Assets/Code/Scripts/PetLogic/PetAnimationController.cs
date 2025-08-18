@@ -40,6 +40,11 @@ public class PetAnimationController : MonoBehaviour
     [SerializeField] private string moveSpeedParameter = "moveSpeed";
     [SerializeField] private string turnVelocityParameter = "turnVelocity";
     
+    [Header("Look-At Behavior")]
+    [SerializeField] private float lookAtSpeed = 2.0f;
+    [SerializeField] private float lookAtDuration = 3.0f;
+    [SerializeField] private float maxTurnVelocity = 1.0f;
+    
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = true;
     
@@ -53,6 +58,10 @@ public class PetAnimationController : MonoBehaviour
     private int currentPathIndex;
     private bool isExecutingSequentialTransition = false;
     private Coroutine currentAnimationCoroutine;
+    
+    // Look-at behavior management
+    private bool isLookingAtUser = false;
+    private Coroutine lookAtCoroutine;
     
     public System.Action<PetActionState> OnAnimationStarted;
     public System.Action<PetActionState> OnAnimationCompleted;
@@ -349,6 +358,73 @@ public class PetAnimationController : MonoBehaviour
         {
             animator.SetFloat(turnVelocityParameter, velocity);
         }
+    }
+    
+    // ============= LOOK-AT BEHAVIOR PROPERTIES =============
+    
+    public bool IsLookingAtUser => isLookingAtUser;
+    
+    // ============= LOOK-AT BEHAVIOR METHODS =============
+    
+    public void LookAtUser(Vector3 cameraPosition)
+    {
+        if (isLookingAtUser) return;
+        
+        if (lookAtCoroutine != null)
+            StopCoroutine(lookAtCoroutine);
+            
+        lookAtCoroutine = StartCoroutine(AnimatedLookAtCamera(cameraPosition));
+    }
+    
+    public void StopLookingAtUser()
+    {
+        if (lookAtCoroutine != null)
+        {
+            StopCoroutine(lookAtCoroutine);
+            lookAtCoroutine = null;
+        }
+        
+        isLookingAtUser = false;
+        SetTurnVelocity(0f);
+    }
+    
+    private IEnumerator AnimatedLookAtCamera(Vector3 targetPosition)
+    {
+        isLookingAtUser = true;
+        
+        // Calculate direction to camera
+        Vector3 lookDirection = targetPosition - transform.position;
+        lookDirection.y = 0; // Ground plane only
+        
+        if (lookDirection.magnitude < 0.1f)
+        {
+            isLookingAtUser = false;
+            yield break;
+        }
+        
+        // Calculate angle to turn
+        float targetAngle = Quaternion.LookRotation(lookDirection).eulerAngles.y;
+        float angleDifference = Mathf.DeltaAngle(transform.eulerAngles.y, targetAngle);
+        
+        // Convert to turn velocity
+        float turnVelocity = Mathf.Clamp(angleDifference / 90f, -maxTurnVelocity, maxTurnVelocity);
+        
+        // Turn toward camera
+        float turnTime = Mathf.Abs(angleDifference) / (90f * lookAtSpeed);
+        float elapsed = 0f;
+        
+        while (elapsed < turnTime)
+        {
+            SetTurnVelocity(turnVelocity * (1f - elapsed / turnTime)); // Slow down as we approach
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        
+        // Stop turning and hold gaze
+        SetTurnVelocity(0f);
+        yield return new WaitForSeconds(lookAtDuration);
+        
+        isLookingAtUser = false;
     }
 
     public void TriggerCustomAnimation(string triggerName)
