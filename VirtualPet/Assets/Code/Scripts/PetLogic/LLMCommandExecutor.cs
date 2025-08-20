@@ -64,6 +64,7 @@ namespace PetBehavior
         
         // References
         private PetMoveVR petMoveVR;
+        private VoiceCommandProcessor voiceCommandProcessor;
         
         // Events
         public System.Action<List<LLMCommand>> OnCommandsParsed;
@@ -113,6 +114,23 @@ namespace PetBehavior
             {
                 Debug.LogError("LLMCommandExecutor: PetMoveVR not found!");
             }
+            
+            // Initialize voice command processor
+            voiceCommandProcessor = FindObjectOfType<VoiceCommandProcessor>();
+            if (voiceCommandProcessor != null)
+            {
+                // Subscribe to voice command events for user input detection
+                voiceCommandProcessor.OnStateCommandRecognized += OnVoiceStateCommand;
+                voiceCommandProcessor.OnFollowCommandRecognized += OnVoiceFollowCommand;
+                voiceCommandProcessor.OnPetNameRecognized += OnVoicePetName;
+                
+                if (showDebugLogs)
+                    Debug.Log("[LLM] Voice command processor found and connected");
+            }
+            else if (showDebugLogs)
+            {
+                Debug.Log("[LLM] Voice command processor not found - voice input disabled");
+            }
         }
         
         private void InitializeFocus()
@@ -144,6 +162,9 @@ namespace PetBehavior
             {
                 userInputDetected = true;
             }
+            
+            // Note: Voice input is handled separately through voice command events
+            // to avoid triggering user input detection on every speech recognition
             
             if (userInputDetected)
             {
@@ -768,6 +789,35 @@ namespace PetBehavior
             }
         }
         
+        // ============= VOICE COMMAND EVENT HANDLERS =============
+        
+        private void OnVoiceStateCommand(string recognizedText, PetActionState targetState)
+        {
+            // Voice commands automatically trigger user input detection
+            OnUserInputDetected();
+            
+            if (showDebugLogs)
+                Debug.Log($"[LLM] Voice state command detected: '{recognizedText}' → {targetState}");
+        }
+        
+        private void OnVoiceFollowCommand(string recognizedText)
+        {
+            // Voice commands automatically trigger user input detection
+            OnUserInputDetected();
+            
+            if (showDebugLogs)
+                Debug.Log($"[LLM] Voice follow command detected: '{recognizedText}'");
+        }
+        
+        private void OnVoicePetName(string recognizedText)
+        {
+            // Pet name recognition triggers user input detection
+            OnUserInputDetected();
+            
+            if (showDebugLogs)
+                Debug.Log($"[LLM] Pet name recognized: '{recognizedText}'");
+        }
+        
         // Testing method for Inspector
         [ContextMenu("Test JSON Command")]
         public void TestJSONCommand()
@@ -790,6 +840,17 @@ namespace PetBehavior
             if (cmd != null)
             {
                 Debug.Log($"Test legacy parsed: action={cmd.action}, duration={cmd.duration}");
+            }
+        }
+        
+        void OnDestroy()
+        {
+            // Unsubscribe from voice command events
+            if (voiceCommandProcessor != null)
+            {
+                voiceCommandProcessor.OnStateCommandRecognized -= OnVoiceStateCommand;
+                voiceCommandProcessor.OnFollowCommandRecognized -= OnVoiceFollowCommand;
+                voiceCommandProcessor.OnPetNameRecognized -= OnVoicePetName;
             }
         }
     }

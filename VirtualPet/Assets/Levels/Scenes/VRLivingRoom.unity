@@ -163,11 +163,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1623993754337152475, guid: 9963d202e9e1c4f74bf69ead095bccd4,
+        type: 3}
+      propertyPath: m_AngularSpeed
+      value: 360
+      objectReference: {fileID: 0}
     - target: {fileID: 7588430993921449747, guid: 9963d202e9e1c4f74bf69ead095bccd4,
         type: 3}
       propertyPath: mainCamera
       value: 
       objectReference: {fileID: 1421136049}
+    - target: {fileID: 7588430993921449747, guid: 9963d202e9e1c4f74bf69ead095bccd4,
+        type: 3}
+      propertyPath: followDistance
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7588430993921449747, guid: 9963d202e9e1c4f74bf69ead095bccd4,
+        type: 3}
+      propertyPath: followMinDistance
+      value: 0.1
+      objectReference: {fileID: 0}
     - target: {fileID: 8507438959298559293, guid: 9963d202e9e1c4f74bf69ead095bccd4,
         type: 3}
       propertyPath: m_LocalPosition.x

@@ -2308,6 +2308,7 @@ GameObject:
   - component: {fileID: 1623993754337152475}
   - component: {fileID: 5782761034448852585}
   - component: {fileID: 7292814449063188402}
+  - component: {fileID: 3686583664054869996}
   m_Layer: 0
   m_Name: BrittanySpaniel
   m_TagString: Untagged
@@ -2325,7 +2326,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -0, y: 0.28, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6034714633833335868}
@@ -2392,6 +2393,8 @@ MonoBehaviour:
   runSpeed: 4
   maxRandomMovementDistance: 5
   showDebugLogs: 1
+  followDistance: 0.5
+  followUpdateInterval: 0.1
 --- !u!195 &1623993754337152475
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -2470,6 +2473,26 @@ MonoBehaviour:
   currentStateParameter: currentState
   moveSpeedParameter: moveSpeed
   turnVelocityParameter: turnVelocity
+  lookAtSpeed: 2
+  lookAtDuration: 3
+  maxTurnVelocity: 1
+  showDebugLogs: 1
+--- !u!114 &3686583664054869996
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9033004810495813511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f6e383a2f22346eab987eea571dae34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  commandFileName: LLMCommands.json
+  fileCheckInterval: 0.5
+  userTimeoutSeconds: 10
+  focusIndicatorText: {fileID: 0}
   showDebugLogs: 1
 --- !u!1 &9092684493172486117
 GameObject:

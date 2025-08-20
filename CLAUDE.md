@@ -23,7 +23,8 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 ### Testing and Debug Controls
 - **Pet behavior testing**: Number keys 1-5 in Play mode to trigger different behaviors (Idle, Sit, Lying, Flat, Sleep)
 - **Movement testing**: Left-click in scene view to make pet move to clicked location
-- **Camera following**: C key to make pet follow camera with automatic distance management (0.1m minimum)
+- **Camera following**: C key to make pet follow camera with 0.5m forward offset distance and automatic look-at behavior
+- **Look-at behavior**: Pet automatically looks at user when they take control (triggered by mouse input or C key)
 - **LLM command testing**: Write JSON commands to `Assets/Code/Scripts/LLMCommands.json` for AI-driven behavior
 - **Debug GUI**: Enable `showDebugLogs` in PetAnimationController, PetActionStateMachine, and LLMCommandExecutor for detailed logging
 
@@ -33,17 +34,20 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 
 **State Machine Architecture (PetBehavior namespace)**
 - `PetActionStateMachine.cs`: BFS-based pathfinding between behavior states with graph representation
-- `PetAnimationController.cs`: Sequential transition system with dynamic timing and animation integration
+- `PetAnimationController.cs`: Sequential transition system with dynamic timing, animation integration, and look-at behavior
 - Uses graph theory for valid state transitions: Idle ↔ Sit ↔ Lying ↔ Sleep/Flat
 - Walk behavior integrated into Idle state via blend tree (no separate Walk state)
+- Look-at system uses animation-driven turning with priority management to prevent movement conflicts
 
 **Movement and Command System (PetLogic/)**
-- `PetMoveVR.cs`: Advanced command queue system with LLM integration and NavMesh pathfinding
+- `PetMoveVR.cs`: Advanced command queue system with LLM integration, NavMesh pathfinding, and camera following
 - `LLMCommandExecutor.cs`: File-based AI command processing with focus management (User vs LLM control)
 - `LLMCommandLogger.cs`: Comprehensive logging system for debugging AI interactions
 - `LLMCommandDebugger.cs`: Inspector-based debugging tools for command testing
 - Automatic movement state detection and behavior synchronization
 - Mouse/touch input handling with user-controlled behavior override
+- Camera following with ground projection for VR headset compatibility and forward offset positioning
+- User control triggers automatic look-at behavior for natural interaction
 
 **Hand Tracking System (HandTrack/)**
 - `HandVisualizer.cs`: Real-time hand joint visualization for Vision Pro
@@ -110,10 +114,12 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 **Critical Development Requirements**
 - Always bake NavMesh before testing pet movement (Window → AI → Navigation → Bake)
 - Test behavior transitions using number keys 1-5 in Play mode
-- Test camera following using C key (exits LLM control, follows camera with distance management)
+- Test camera following using C key (exits LLM control, follows camera with 0.5m forward offset and triggers look-at)
+- Test look-at behavior: pet should automatically turn toward user when they take control (mouse input or C key)
 - Use XR Device Simulator for development without physical headset
 - Enable debug logging in PetAnimationController, PetActionStateMachine, and LLMCommandExecutor
 - Ensure LLMCommandExecutor is present in scene for AI command processing
+- Verify Animator Controller has `turnVelocity` parameter properly configured for look-at behavior
 
 **Code Integration Patterns**
 - Extend behavior system by adding states to PetActionState enum and updating state graph in PetActionStateMachine
@@ -131,8 +137,10 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 **Performance Considerations**
 - Command queue system prevents overlapping behaviors and ensures smooth execution
 - Dynamic animation timing system optimizes transition delays for responsiveness
-- NavMesh pathfinding optimized for real-time navigation
+- NavMesh pathfinding optimized for real-time navigation with smooth path updates to prevent jittering
 - LLM command processing includes comprehensive completion tracking to prevent blocking
+- Look-at system uses existing animation blend tree for minimal performance impact
+- Movement priority system prevents turn velocity conflicts between movement and look-at
 - URP pipeline configured for XR performance requirements
 - Hand tracking uses efficient joint caching and update patterns
 
@@ -161,3 +169,30 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 3. Comprehensive logging available in `Assets/Code/Scripts/Logs/LLMCommandLog.json`
 4. Use LLMCommandDebugger component for Inspector-based testing and debugging
 5. Monitor console logs with `[LLM]` prefix for detailed execution tracking
+
+## Camera Following and Look-At System
+
+### Camera Following Features
+- **Forward Offset Following**: Pet maintains 0.5m distance in front of camera for comfortable viewing
+- **Ground Projection**: Camera X/Z coordinates projected to NavMesh surface for VR headset compatibility
+- **Smooth Path Updates**: Uses `NavMesh.CalculatePath()` and `SetPath()` to prevent animation jittering
+- **Automatic Look-At**: Pet automatically looks at user when they take control (mouse input or C key)
+
+### Look-At Behavior Implementation
+- **Animation-Driven**: Uses existing `turnVelocity` parameter and blend tree for natural turning
+- **Priority System**: Movement turn velocity only applies when not looking at user
+- **Smooth Deceleration**: Pet slows rotation as it approaches target direction
+- **Ground-Plane Calculation**: Reliable direction finding using Unity Quaternion.LookRotation()
+- **Duration-Based**: Configurable look-at duration with automatic return to normal behavior
+
+### Animator Setup Requirements
+For look-at behavior to work properly, ensure your Animator Controller has:
+- `turnVelocity` (float): Controls body rotation in blend tree (-1 = left, 0 = idle, 1 = right)
+- `moveSpeed` (float): Controls movement animations
+- `currentState` (int): Current behavior state
+- Blend tree configured for turn left/idle/turn right animations at -1/0/1 thresholds
+
+### Key Configuration Files
+- `Assets/Code/Scripts/PetLogic/AnimatorSetup_LookAt.md`: Complete setup guide for Unity Animator
+- `PetAnimationController.cs`: Look-at behavior configuration (lookAtSpeed, lookAtDuration, maxTurnVelocity)
+- `PetMoveVR.cs`: Camera following and movement priority system
