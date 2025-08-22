@@ -2304,7 +2304,6 @@ GameObject:
   - component: {fileID: 8507438959298559293}
   - component: {fileID: -4963254627304455436}
   - component: {fileID: 4884865665766413504}
-  - component: {fileID: 7588430993921449747}
   - component: {fileID: 1623993754337152475}
   - component: {fileID: 5782761034448852585}
   - component: {fileID: 7292814449063188402}
@@ -2376,25 +2375,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
---- !u!114 &7588430993921449747
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9033004810495813511}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6292141359e1f403aa9789fb14f3b7b4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mainCamera: {fileID: 0}
-  walkSpeed: 0.5
-  runSpeed: 4
-  maxRandomMovementDistance: 5
-  showDebugLogs: 1
-  followDistance: 0.5
-  followUpdateInterval: 0.1
 --- !u!195 &1623993754337152475
 NavMeshAgent:
   m_ObjectHideFlags: 0

@@ -6,10 +6,21 @@ using System.Collections.Generic;
 using System.Linq;
 using PetBehavior;
 
+// Common interface for pet controllers that can execute commands
+public interface IPetController
+{
+    IEnumerator ExecuteStateTransition(PetActionState targetState);
+    IEnumerator ExecuteMovementCommand(Vector3 destination);
+    IEnumerator ExecuteLLMMovementCommand(Vector3 destination, float speed);
+    IEnumerator ExecuteRandomMovementCommand(float speed, float maxDistance);
+    IEnumerator ExecuteDurationBasedStateTransition(PetActionState targetState, float duration);
+    IEnumerator ExecuteFollowCameraCommand(Camera targetCamera, float updateInterval);
+}
+
 // Command system for queued actions
 public abstract class PetCommand
 {
-    public abstract IEnumerator Execute(PetMoveVR controller);
+    public abstract IEnumerator Execute(IPetController controller);
 }
 
 public class StateTransitionCommand : PetCommand
@@ -21,7 +32,7 @@ public class StateTransitionCommand : PetCommand
         targetState = state;
     }
     
-    public override IEnumerator Execute(PetMoveVR controller)
+    public override IEnumerator Execute(IPetController controller)
     {
         yield return controller.ExecuteStateTransition(targetState);
     }
@@ -36,7 +47,7 @@ public class MovementCommand : PetCommand
         destination = dest;
     }
     
-    public override IEnumerator Execute(PetMoveVR controller)
+    public override IEnumerator Execute(IPetController controller)
     {
         yield return controller.ExecuteMovementCommand(destination);
     }
@@ -56,7 +67,7 @@ public class LLMMovementCommand : PetCommand
         speed = moveSpeed;
     }
     
-    public override IEnumerator Execute(PetMoveVR controller)
+    public override IEnumerator Execute(IPetController controller)
     {
         yield return controller.ExecuteLLMMovementCommand(destination, speed);
     }
@@ -75,7 +86,7 @@ public class RandomMovementCommand : PetCommand
         maxDistance = maxDist;
     }
     
-    public override IEnumerator Execute(PetMoveVR controller)
+    public override IEnumerator Execute(IPetController controller)
     {
         yield return controller.ExecuteRandomMovementCommand(speed, maxDistance);
     }
@@ -92,7 +103,7 @@ public class DurationBasedStateCommand : PetCommand
         duration = dur;
     }
     
-    public override IEnumerator Execute(PetMoveVR controller)
+    public override IEnumerator Execute(IPetController controller)
     {
         yield return controller.ExecuteDurationBasedStateTransition(targetState, duration);
     }
@@ -109,14 +120,14 @@ public class FollowCameraCommand : PetCommand
         updateInterval = interval;
     }
     
-    public override IEnumerator Execute(PetMoveVR controller)
+    public override IEnumerator Execute(IPetController controller)
     {
         yield return controller.ExecuteFollowCameraCommand(targetCamera, updateInterval);
     }
 }
 
 [RequireComponent(typeof(NavMeshAgent))]
-public class PetMoveVR : MonoBehaviour
+public class PetMoveVR : MonoBehaviour, IPetController
 {
     private NavMeshAgent agent;
     private Animator animator;
