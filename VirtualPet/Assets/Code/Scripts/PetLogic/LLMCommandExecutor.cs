@@ -64,7 +64,7 @@ namespace PetBehavior
         
         // References
         private PetMoveVR petMoveVR;
-        private VoiceCommandProcessor voiceCommandProcessor;
+        // private VoiceCommandProcessor voiceCommandProcessor;
         
         // Events
         public System.Action<List<LLMCommand>> OnCommandsParsed;
@@ -116,21 +116,21 @@ namespace PetBehavior
             }
             
             // Initialize voice command processor
-            voiceCommandProcessor = FindObjectOfType<VoiceCommandProcessor>();
-            if (voiceCommandProcessor != null)
-            {
-                // Subscribe to voice command events for user input detection
-                voiceCommandProcessor.OnStateCommandRecognized += OnVoiceStateCommand;
-                voiceCommandProcessor.OnFollowCommandRecognized += OnVoiceFollowCommand;
-                voiceCommandProcessor.OnPetNameRecognized += OnVoicePetName;
-                
-                if (showDebugLogs)
-                    Debug.Log("[LLM] Voice command processor found and connected");
-            }
-            else if (showDebugLogs)
-            {
-                Debug.Log("[LLM] Voice command processor not found - voice input disabled");
-            }
+            // voiceCommandProcessor = FindObjectOfType<VoiceCommandProcessor>();
+            // if (voiceCommandProcessor != null)
+            // {
+            //     // Subscribe to voice command events for user input detection
+            //     voiceCommandProcessor.OnStateCommandRecognized += OnVoiceStateCommand;
+            //     voiceCommandProcessor.OnFollowCommandRecognized += OnVoiceFollowCommand;
+            //     voiceCommandProcessor.OnPetNameRecognized += OnVoicePetName;
+            //     
+            //     if (showDebugLogs)
+            //         Debug.Log("[LLM] Voice command processor found and connected");
+            // }
+            // else if (showDebugLogs)
+            // {
+            //     Debug.Log("[LLM] Voice command processor not found - voice input disabled");
+            // }
         }
         
         private void InitializeFocus()
@@ -846,12 +846,12 @@ namespace PetBehavior
         void OnDestroy()
         {
             // Unsubscribe from voice command events
-            if (voiceCommandProcessor != null)
-            {
-                voiceCommandProcessor.OnStateCommandRecognized -= OnVoiceStateCommand;
-                voiceCommandProcessor.OnFollowCommandRecognized -= OnVoiceFollowCommand;
-                voiceCommandProcessor.OnPetNameRecognized -= OnVoicePetName;
-            }
+            // if (voiceCommandProcessor != null)
+            // {
+            //     voiceCommandProcessor.OnStateCommandRecognized -= OnVoiceStateCommand;
+            //     voiceCommandProcessor.OnFollowCommandRecognized -= OnVoiceFollowCommand;
+            //     voiceCommandProcessor.OnPetNameRecognized -= OnVoicePetName;
+            // }
         }
     }
 }
