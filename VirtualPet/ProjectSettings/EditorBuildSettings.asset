@@ -8,9 +8,12 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Levels/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
+  - enabled: 0
     path: Assets/Samples/PolySpatial/Scenes/MixedReality.unity
     guid: 4062257bd31be4dc980c3241c72cef79
+  - enabled: 1
+    path: Assets/Levels/Scenes/VoiceInput.unity
+    guid: 5b804ce8cb5a747ec95c813af8d79b3c
   m_configObjects:
     UnityEditor.XR.VisionOS.VisionOSSettings: {fileID: 11400000, guid: 42ac7f5e2e7654cda933694ebc36c9ea,
       type: 2}

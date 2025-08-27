@@ -47,6 +47,8 @@ public class PetMove : MonoBehaviour, IPetController
         animationController = GetComponent<PetAnimationController>();
         stateMachine = GetComponent<PetActionStateMachine>();
         
+        
+
         // Initialize command queue
         commandQueue = new Queue<PetCommand>();
         

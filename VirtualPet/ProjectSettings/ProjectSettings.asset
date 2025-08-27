@@ -140,11 +140,7 @@ PlayerSettings:
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
   bundleVersion: 0.1.0
-  preloadedAssets:
-  - {fileID: -441379944943692914, guid: bf3fe00e25b7b4a5689f2364024bd931, type: 2}
-  - {fileID: 11400000, guid: 8775ba46b4b2a4d4d9916836a2e4927a, type: 2}
-  - {fileID: 11400000, guid: 8f13fc35b420a46e6a750089ffbdd1a7, type: 2}
-  - {fileID: -8418105329386408849, guid: 4c09c9970042d48d380f9ae14f694d6f, type: 2}
+  preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -568,7 +564,7 @@ PlayerSettings:
   enableCrashReportAPI: 0
   cameraUsageDescription: 
   locationUsageDescription: 
-  microphoneUsageDescription: 
+  microphoneUsageDescription: Whisper
   bluetoothUsageDescription: 
   macOSTargetOSVersion: 10.13.0
   switchNMETAOverride: 
@@ -937,6 +933,6 @@ PlayerSettings:
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
-  platformRequiresReadableAssets: 1
+  platformRequiresReadableAssets: 0
   virtualTexturingSupportEnabled: 0
   insecureHttpOption: 0

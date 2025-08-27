@@ -176,6 +176,10 @@ public class PetMoveVR : MonoBehaviour, IPetController
         animator = GetComponent<Animator>();
         animationController = GetComponent<PetAnimationController>();
         stateMachine = GetComponent<PetActionStateMachine>();
+
+        // Get the current agent type ID
+        int currentAgentID = agent.agentTypeID;
+        Debug.Log("The current agent's type ID is: " + currentAgentID);
         
         // Initialize command queue
         commandQueue = new Queue<PetCommand>();
