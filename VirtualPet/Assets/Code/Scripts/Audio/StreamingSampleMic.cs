@@ -37,7 +37,6 @@ namespace Whisper.Samples
         {
             _stream = await whisper.CreateStream(microphoneRecord);
             _stream.OnResultUpdated += OnResult;
-            _stream.OnSegmentFinished += OnSegmentFinished;
             microphoneRecord.OnRecordStop += OnRecordStop;
             button.onClick.AddListener(OnButtonPressed);
 
@@ -70,17 +69,15 @@ namespace Whisper.Samples
 
         private void OnRecordStop(AudioChunk recordedAudio) => buttonText.text = "Start";
 
-        private void OnResult(string result) => text.text = result;
-
-        private void OnSegmentFinished(WhisperResult segment)
+        private void OnResult(string result)
         {
-            string segmentText = segment.Result;
-            commandText.text = segmentText;
+            text.text = result;
+            commandText.text = result;
 
-            // Process voice command if pet is available
-            if (petMove != null && !string.IsNullOrWhiteSpace(segmentText))
+            // Process voice command if pet is available and result is not empty
+            if (petMove != null && !string.IsNullOrWhiteSpace(result))
             {
-                ProcessVoiceCommand(segmentText.ToLower().Trim());
+                ProcessVoiceCommand(result.ToLower().Trim());
             }
         }
 
