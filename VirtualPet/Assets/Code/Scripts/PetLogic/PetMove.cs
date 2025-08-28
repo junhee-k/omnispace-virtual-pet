@@ -431,6 +431,71 @@ public class PetMove : MonoBehaviour, IPetController
         }
     }
     
+    // Voice command processing
+    public void ProcessVoiceCommand(string command)
+    {
+        if (showDebugLogs)
+            Debug.Log($"[Voice] Received voice command: '{command}'");
+
+        // Force user control when voice command is received
+        if (llmCommandExecutor != null)
+        {
+            llmCommandExecutor.ForceUserControl();
+        }
+
+        // Map voice command to appropriate action
+        switch (command.ToLower())
+        {
+            case "sit":
+                QueueStateCommand(PetActionState.Sit);
+                break;
+            case "lying":
+                QueueStateCommand(PetActionState.Lying);
+                break;
+            case "sleep":
+                QueueStateCommand(PetActionState.Sleep);
+                break;
+            case "idle":
+                QueueStateCommand(PetActionState.Idle);
+                break;
+            case "flat":
+                QueueStateCommand(PetActionState.Flat);
+                break;
+            case "follow":
+                QueueFollowCameraCommand();
+                break;
+            case "stop":
+                StopFollowing();
+                commandQueue.Clear(); // Clear any pending commands
+                if (commandExecutionCoroutine != null)
+                {
+                    StopCoroutine(commandExecutionCoroutine);
+                    commandExecutionCoroutine = null;
+                    isExecutingCommand = false;
+                }
+                break;
+            default:
+                if (showDebugLogs)
+                    Debug.LogWarning($"[Voice] Unknown command: '{command}'");
+                break;
+        }
+    }
+
+    private void QueueStateCommand(PetActionState targetState)
+    {
+        // Stop any current following when transitioning states
+        if (isFollowingCamera)
+        {
+            StopFollowing();
+        }
+
+        // Queue the state transition command
+        commandQueue.Enqueue(new StateTransitionCommand(targetState));
+        
+        if (showDebugLogs)
+            Debug.Log($"[Voice] Queued state transition to: {targetState}");
+    }
+
     // Focus management event handlers
     private void OnUserTakesControl()
     {
