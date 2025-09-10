@@ -131,26 +131,8 @@ public class PetMove : MonoBehaviour, IPetController
 
     private void HandleXRInput()
     {
-        // Handle primary touch input for follow mode
-        if (Touch.activeTouches.Count > 0)
-        {
-            foreach (Touch touch in Touch.activeTouches)
-            {
-                SpatialPointerState touchData = EnhancedSpatialPointerSupport.GetPointerState(touch);
-                
-                // Primary touch (IndirectPinch or DirectPinch) triggers follow mode
-                if (touchData.Kind == SpatialPointerKind.IndirectPinch || touchData.Kind == SpatialPointerKind.DirectPinch)
-                {
-                    if (touch.phase == TouchPhase.Began)
-                    {
-                        QueueFollowCameraCommand();
-                        
-                        if (showDebugLogs)
-                            Debug.Log("[XR] Primary touch detected - activating follow mode");
-                    }
-                }
-            }
-        }
+        // XR input handling removed - pet only follows via voice commands
+        // This prevents conflicts with voice recording system that uses pinch gestures
     }
     
     private void QueueFollowCameraCommand()

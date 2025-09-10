@@ -1,6 +1,7 @@
 using System.Collections;
 using Unity.AI.Navigation;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 
@@ -99,21 +100,24 @@ public class ARNavMeshManager : MonoBehaviour
             
             if (hasPendingChanges && timeSinceLastBake >= bakeInterval)
             {
-                UpdateFloorNavMeshes();
+                yield return StartCoroutine(UpdateFloorNavMeshesAsync());
                 hasPendingChanges = false;
                 lastBakeTime = Time.time;
                 
                 if (showDebugLogs)
-                    Debug.Log($"[ARNavMeshManager] NavMesh baking completed at {Time.time}");
+                    Debug.Log($"[ARNavMeshManager] Async NavMesh baking completed at {Time.time}");
             }
             
             yield return new WaitForSeconds(0.5f); // Check every 0.5 seconds
         }
     }
     
-    private void UpdateFloorNavMeshes()
+    private IEnumerator UpdateFloorNavMeshesAsync()
     {
         int bakedCount = 0;
+        
+        if (showDebugLogs)
+            Debug.Log("[ARNavMeshManager] Starting async NavMesh baking for floor planes");
         
         foreach (ARPlane plane in arPlaneManager.trackables)
         {
@@ -124,11 +128,42 @@ public class ARNavMeshManager : MonoBehaviour
                 {
                     // Configure the NavMesh for the target agent type
                     navMeshSurface.agentTypeID = targetAgentTypeID;
-                    navMeshSurface.BuildNavMesh();
+                    
+                    if (showDebugLogs)
+                        Debug.Log($"[ARNavMeshManager] Starting async bake for floor plane: {plane.name}");
+                    
+                    // Use Unity's NavMeshBuilder.UpdateNavMeshDataAsync for true async baking
+                    NavMeshData navMeshData = navMeshSurface.navMeshData;
+                    if (navMeshData == null)
+                    {
+                        navMeshData = new NavMeshData(targetAgentTypeID);
+                        navMeshSurface.navMeshData = navMeshData;
+                    }
+                    
+                    NavMeshBuildSettings buildSettings = navMeshSurface.GetBuildSettings();
+                    
+                    // Get the sources for this surface
+                    var sources = new System.Collections.Generic.List<NavMeshBuildSource>();
+                    var bounds = new Bounds(navMeshSurface.transform.position, navMeshSurface.size);
+                    NavMeshBuilder.CollectSources(
+                        navMeshSurface.transform, 
+                        navMeshSurface.layerMask, 
+                        navMeshSurface.useGeometry, 
+                        navMeshSurface.defaultArea, 
+                        new System.Collections.Generic.List<NavMeshBuildMarkup>(), 
+                        sources
+                    );
+                    
+                    // Start async NavMesh data update
+                    AsyncOperation asyncOp = NavMeshBuilder.UpdateNavMeshDataAsync(navMeshData, buildSettings, sources, bounds);
+                    
+                    // Wait for async operation to complete
+                    yield return asyncOp;
+                    
                     bakedCount++;
                     
                     if (showDebugLogs)
-                        Debug.Log($"[ARNavMeshManager] Baked NavMesh for floor plane: {plane.name} with agentTypeID: {targetAgentTypeID}");
+                        Debug.Log($"[ARNavMeshManager] Completed async bake for floor plane: {plane.name} with agentTypeID: {targetAgentTypeID}");
                 }
             }
         }

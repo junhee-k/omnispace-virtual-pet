@@ -1,10 +1,12 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using Whisper.Utils;
 using PetBehavior;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch;
+using TouchPhase = UnityEngine.InputSystem.TouchPhase;
+using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 
 
 namespace Whisper.Samples
@@ -16,35 +18,21 @@ namespace Whisper.Samples
         [SerializeField] private MicrophoneRecord microphoneRecord;
 
         [Header("UI")]
-        [SerializeField] private Button button;
-        [SerializeField] private TextMeshProUGUI buttonText;
         [SerializeField] private TextMeshProUGUI text;
-        [SerializeField] private TextMeshProUGUI commandText;
+        [SerializeField] private TextMeshProUGUI debugText;
         [SerializeField] private WhisperStream _stream;
+        
+        [Header("Spatial Input")]
+        [SerializeField] private InputActionReference m_Touch;
         
         [Header("Pet Control")]
         [SerializeField] private PetMove petMove;
-
-        private readonly HashSet<string> sitCommandWords = new HashSet<string>
-        {
-            "sit",
-            "stand",
-            "go",
-            "hello"
-        };
 
         private async void Start()
         {
             _stream = await whisper.CreateStream(microphoneRecord);
             _stream.OnResultUpdated += OnResult;
             microphoneRecord.OnRecordStop += OnRecordStop;
-            button.onClick.AddListener(OnButtonPressed);
-
-            // Find PetMove if not assigned
-            if (petMove == null)
-            {
-                petMove = FindObjectOfType<PetMove>();
-            }
 
             foreach (string device in Microphone.devices)
             {
@@ -52,27 +40,66 @@ namespace Whisper.Samples
             }
         }
 
-        private void OnButtonPressed()
+        private void OnEnable()
         {
-            if (!microphoneRecord.IsRecording)
+            EnhancedTouchSupport.Enable();
+            if (m_Touch != null)
             {
-                _stream.StartStream();
-                microphoneRecord.StartRecord();
+                m_Touch.action.Enable();
             }
-
-            else
-            {
-                microphoneRecord.StopRecord();
-            }
-            buttonText.text = microphoneRecord.IsRecording ? "Stop" : "Start";
         }
 
-        private void OnRecordStop(AudioChunk recordedAudio) => buttonText.text = "Start";
+        private void OnDisable()
+        {
+            if (m_Touch != null)
+            {
+                m_Touch.action.Disable();
+            }
+        }
+
+        private void Update()
+        {
+            if (m_Touch == null) return;
+            
+            var activeTouches = Touch.activeTouches;
+            if (activeTouches.Count > 0)
+            {
+                var primaryTouchPhase = activeTouches[0].phase;
+                
+                if (primaryTouchPhase == TouchPhase.Began && !microphoneRecord.IsRecording)
+                {
+                    // Start recording (pinch detected)
+                    Debug.Log("[Voice] Pinch detected - Starting recording");
+                    debugText.text = "[Voice] Pinch detected - Starting recording";
+                    _stream.StartStream();
+                    microphoneRecord.StartRecord();
+                }
+                else if ((primaryTouchPhase == TouchPhase.Ended || primaryTouchPhase == TouchPhase.Canceled) && microphoneRecord.IsRecording)
+                {
+                    // Stop recording (pinch released or canceled)
+                    Debug.Log("[Voice] Pinch released - Stopping recording");
+                    debugText.text = "[Voice] Pinch released - Stopping recording";
+                    microphoneRecord.StopRecord();
+                }
+            }
+            else if (activeTouches.Count == 0 && microphoneRecord.IsRecording)
+            {
+                // No active touches but still recording - force stop
+                Debug.Log("[Voice] No active touches - Force stopping recording");
+                debugText.text = "[Voice] No active touches - Force stopping recording";
+                microphoneRecord.StopRecord();
+            }
+        }
+
+        private void OnRecordStop(AudioChunk recordedAudio)
+        {
+            Debug.Log("[Voice] Recording stopped");
+            debugText.text = "[Voice] Recording stopped";
+        }
 
         private void OnResult(string result)
         {
             text.text = result;
-            commandText.text = result;
 
             // Process voice command if pet is available and result is not empty
             if (petMove != null && !string.IsNullOrWhiteSpace(result))
@@ -83,6 +110,18 @@ namespace Whisper.Samples
 
         private void ProcessVoiceCommand(string command)
         {
+            // Find PetMove dynamically if not assigned
+            if (petMove == null)
+            {
+                petMove = FindObjectOfType<PetMove>();
+            }
+            
+            if (petMove == null)
+            {
+                Debug.LogWarning("[Voice] No pet found to process voice command");
+                return;
+            }
+            
             Debug.Log($"[Voice] Processing command: '{command}'");
 
             // State transition commands

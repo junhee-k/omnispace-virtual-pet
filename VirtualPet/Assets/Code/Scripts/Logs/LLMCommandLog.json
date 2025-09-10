@@ -5121,10 +5121,49 @@
             "error": "",
             "executionTimeMs": 0.0,
             "focusState": "UserControlled"
+        },
+        {
+            "timestamp": "2025-09-06 20:58:06.475",
+            "command": "FOCUS_STATE_CHANGE",
+            "action": "FocusChange",
+            "duration": 0.0,
+            "target": "",
+            "speed": "",
+            "success": true,
+            "result": "Focus changed to: UserControlled",
+            "error": "",
+            "executionTimeMs": 0.0,
+            "focusState": "UserControlled"
+        },
+        {
+            "timestamp": "2025-09-06 20:58:43.893",
+            "command": "FOCUS_STATE_CHANGE",
+            "action": "FocusChange",
+            "duration": 0.0,
+            "target": "",
+            "speed": "",
+            "success": true,
+            "result": "Focus changed to: LLMControlled",
+            "error": "",
+            "executionTimeMs": 0.0,
+            "focusState": "LLMControlled"
+        },
+        {
+            "timestamp": "2025-09-07 20:27:40.553",
+            "command": "FOCUS_STATE_CHANGE",
+            "action": "FocusChange",
+            "duration": 0.0,
+            "target": "",
+            "speed": "",
+            "success": true,
+            "result": "Focus changed to: UserControlled",
+            "error": "",
+            "executionTimeMs": 0.0,
+            "focusState": "UserControlled"
         }
     ],
-    "totalCommands": 394,
-    "successfulCommands": 394,
+    "totalCommands": 397,
+    "successfulCommands": 397,
     "failedCommands": 0,
-    "lastUpdated": "2025-08-24 20:08:50"
+    "lastUpdated": "2025-09-07 20:27:40"
 }
