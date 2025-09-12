@@ -132,6 +132,19 @@ public class PetMove : MonoBehaviour, IPetController
     private void HandleXRInput()
     {
         // XR input handling removed - pet only follows via voice commands
+        EnhancedTouchSupport.Enable();
+
+        foreach (var touch in Touch.activeTouches)
+        {
+            if (touch.phase == TouchPhase.Began)
+            {
+                // Touch began - trigger follow camera command
+                if (showDebugLogs)
+                    Debug.Log("[XR] Pet is now following the camera (touch input detected)");
+                QueueFollowCameraCommand();
+                break;
+            }
+        }
         // This prevents conflicts with voice recording system that uses pinch gestures
     }
     
@@ -308,7 +321,7 @@ public class PetMove : MonoBehaviour, IPetController
                         // Fallback to SetDestination if path calculation fails
                         agent.SetDestination(groundCameraPosition);
                         lastTargetPosition = groundCameraPosition;
-                        
+                            
                         if (showDebugLogs)
                             Debug.Log($"[XR] Fallback destination to {groundCameraPosition}, path status: {currentPath.status}");
                     }
