@@ -17,8 +17,9 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 
 ### Essential Pre-Development Setup
 - **NavMesh baking**: Window → AI → Navigation → Bake (CRITICAL for pet movement)
+- **Async NavMesh baking**: Use SimpleNavMeshBaker component for non-blocking NavMesh generation
 - **XR simulation**: Use XR Device Simulator in Play mode for testing without headset
-- **Scene selection**: VRLivingRoom.unity for main testing, HandTrackTest.unity for hand interaction debugging
+- **Scene selection**: VRLivingRoom.unity for main testing, BakingTest.unity for NavMesh testing, HandTrackTest.unity for hand interaction debugging
 
 ### Testing and Debug Controls
 - **Pet behavior testing**: Number keys 1-5 in Play mode to trigger different behaviors (Idle, Sit, Lying, Flat, Sleep)
@@ -41,6 +42,7 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 
 **Movement and Command System (PetLogic/)**
 - `PetMoveVR.cs`: Advanced command queue system with LLM integration, NavMesh pathfinding, and camera following
+- `PetMove.cs`: Enhanced touch input support for XR environments with camera following triggers
 - `LLMCommandExecutor.cs`: File-based AI command processing with focus management (User vs LLM control)
 - `LLMCommandLogger.cs`: Comprehensive logging system for debugging AI interactions
 - `LLMCommandDebugger.cs`: Inspector-based debugging tools for command testing
@@ -57,6 +59,7 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 
 **AR Integration (ARLogic/)**
 - `ARNavMeshManager.cs` & `ARPlaneNavMesh.cs`: Dynamic NavMesh generation on detected AR planes
+- `SimpleNavMeshBaker.cs`: Async NavMesh baking system with debug visualization for development
 - Integrates with ARFoundation for real-time plane detection and navigation setup
 
 ### Key Package Dependencies
@@ -82,6 +85,7 @@ This is a Unity-based Virtual Pet application for VR/AR platforms, primarily tar
 **Primary Scenes**
 - `VRLivingRoom.unity`: Main VR experience with living room environment
 - `NavMeshTest.unity`: Navigation system testing and debugging
+- `BakingTest.unity`: Async NavMesh baking testing with debug visualization
 - `HandTrackTest.unity`: Hand tracking interaction testing
 - `MixedReality.unity`: Primary build scene (configured in EditorBuildSettings)
 
@@ -196,3 +200,43 @@ For look-at behavior to work properly, ensure your Animator Controller has:
 - `Assets/Code/Scripts/PetLogic/AnimatorSetup_LookAt.md`: Complete setup guide for Unity Animator
 - `PetAnimationController.cs`: Look-at behavior configuration (lookAtSpeed, lookAtDuration, maxTurnVelocity)
 - `PetMoveVR.cs`: Camera following and movement priority system
+
+## Async NavMesh Baking System
+
+### SimpleNavMeshBaker Component
+- **Async Baking**: Non-blocking NavMesh generation using coroutines and Unity's async NavMesh APIs
+- **Debug Visualization**: Transparent cyan overlay in Game View showing walkable NavMesh areas
+- **Smart Build Logic**: Automatically detects first-time build vs update scenarios
+- **UI Integration**: Button-driven interface for easy testing and development
+
+### Key Features
+- **First-time Building**: Uses `BuildNavMesh()` for initial NavMesh creation
+- **Incremental Updates**: Uses `UpdateNavMesh()` for existing NavMesh modifications
+- **Visual Debugging**: Creates "NavMesh_Debug_Global" GameObject with transparent cyan material
+- **Performance**: UI remains responsive during baking operations
+
+### Usage Instructions
+1. **Setup**: Add `SimpleNavMeshBaker` component to any GameObject in scene
+2. **Assign**: Reference a `NavMeshSurface` component in the inspector
+3. **Configure**: Enable "Show NavMesh In Game View" for debug visualization
+4. **Bake**: Call `BakeNavMesh()` method (UI button or code)
+5. **Clear**: Use `ClearNavMesh()` to reset for testing
+6. **Status**: Check `GetStatusInfo()` for current baking state
+
+### Inspector Settings
+- `showDebugLogs`: Enable detailed console logging for debugging
+- `showNavMeshInGameView`: Toggle transparent cyan NavMesh visualization
+- `navMeshSurface`: Reference to NavMeshSurface component for baking
+
+### Test Scene
+- **BakingTest.unity**: Complete test scene with UI button integration
+- NavMeshBaker GameObject with configured SimpleNavMeshBaker component
+- NavMesh Surface GameObject with appropriate settings for general use
+- UI Canvas with "Bake NavMesh" button connected to BakeNavMesh() method
+
+### Technical Implementation
+- **Coroutine-based**: Uses `StartCoroutine()` for async behavior without blocking main thread
+- **AsyncOperation handling**: Properly waits for Unity's async NavMesh operations
+- **Error handling**: Comprehensive null checks and error reporting
+- **Memory management**: Automatic cleanup of debug visualization objects
+- **Unity 2022.3 compatible**: Uses modern Unity NavMesh APIs
