@@ -6,9 +6,9 @@ public class LLMCommandDebugger : MonoBehaviour
     [Header("Debug Commands")]
     [SerializeField] private bool testMoveCommand = false;
     [SerializeField] private bool testSitCommand = false;
-    
+
     private LLMCommandExecutor commandExecutor;
-    
+
     void Start()
     {
         commandExecutor = FindObjectOfType<LLMCommandExecutor>();
@@ -17,7 +17,7 @@ public class LLMCommandDebugger : MonoBehaviour
             Debug.LogError("LLMCommandDebugger: LLMCommandExecutor not found!");
         }
     }
-    
+
     void Update()
     {
         if (testMoveCommand)
@@ -25,32 +25,32 @@ public class LLMCommandDebugger : MonoBehaviour
             testMoveCommand = false;
             TestMoveCommand();
         }
-        
+
         if (testSitCommand)
         {
             testSitCommand = false;
             TestSitCommand();
         }
     }
-    
+
     void TestMoveCommand()
     {
         if (commandExecutor == null) return;
-        
+
         Debug.Log("=== Testing Move Command ===");
-        
+
         var moveCommand = new LLMCommand
         {
             action = "move",
-            target = "floor", 
+            target = "floor",
             speed = "walk"
         };
-        
+
         Debug.Log($"Command: action={moveCommand.action}, target={moveCommand.target}, speed={moveCommand.speed}");
         Debug.Log($"IsMovementCommand: {moveCommand.IsMovementCommand}");
-        
+
         CommandResult result = commandExecutor.ExecuteCommand(moveCommand);
-        
+
         Debug.Log($"Result: success={result.success}");
         if (!result.success)
         {
@@ -61,24 +61,24 @@ public class LLMCommandDebugger : MonoBehaviour
             Debug.Log($"Move command succeeded: {result.message}");
         }
     }
-    
+
     void TestSitCommand()
     {
         if (commandExecutor == null) return;
-        
+
         Debug.Log("=== Testing Sit Command ===");
-        
+
         var sitCommand = new LLMCommand
         {
             action = "sit",
             duration = 3.0f
         };
-        
+
         Debug.Log($"Command: action={sitCommand.action}, duration={sitCommand.duration}");
         Debug.Log($"IsMovementCommand: {sitCommand.IsMovementCommand}");
-        
+
         CommandResult result = commandExecutor.ExecuteCommand(sitCommand);
-        
+
         Debug.Log($"Result: success={result.success}");
         if (!result.success)
         {
@@ -89,12 +89,12 @@ public class LLMCommandDebugger : MonoBehaviour
             Debug.Log($"Sit command succeeded: {result.message}");
         }
     }
-    
+
     [ContextMenu("Debug Command File Parsing")]
     void TestFileParsingDirectly()
     {
         string testJSON = "{\"action\": \"move\", \"target\": \"floor\", \"speed\": \"walk\"}";
-        
+
         try
         {
             LLMCommand cmd = JsonUtility.FromJson<LLMCommand>(testJSON);
@@ -106,7 +106,7 @@ public class LLMCommandDebugger : MonoBehaviour
             Debug.LogError($"JSON parsing failed: {e.Message}");
         }
     }
-    
+
     [ContextMenu("Check NavMesh Agent")]
     void CheckNavMeshStatus()
     {

@@ -7,7 +7,7 @@ using Unity.AI.Navigation;
 public class ARPlaneNavMesh : MonoBehaviour
 {
     private NavMeshSurface navMeshSurface;
-    
+
     void Start()
     {
         navMeshSurface = GetComponent<NavMeshSurface>();

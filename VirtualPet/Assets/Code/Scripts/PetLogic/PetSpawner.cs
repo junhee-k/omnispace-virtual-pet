@@ -33,7 +33,7 @@ public class PetSpawner : MonoBehaviour
 
     // Reference to the AR Plane Manager component.
     private ARPlaneManager arPlaneManager;
-    
+
     // Simple two-pinch detection
     private bool hasSpawnedThisSession = false;
 
@@ -45,7 +45,7 @@ public class PetSpawner : MonoBehaviour
     void Awake()
     {
         arPlaneManager = GetComponent<ARPlaneManager>();
-        
+
         if (placementIndicator != null)
         {
             placementIndicator.SetActive(false);
@@ -62,7 +62,7 @@ public class PetSpawner : MonoBehaviour
             // Count active pinches
             int activePinchCount = 0;
             SpatialPointerState firstPinchData = new SpatialPointerState();
-            
+
             foreach (Touch touch in Touch.activeTouches)
             {
                 SpatialPointerState touchData = EnhancedSpatialPointerSupport.GetPointerState(touch);
@@ -78,9 +78,9 @@ public class PetSpawner : MonoBehaviour
                     }
                 }
             }
-            
+
             Debug.Log($"[PetSpawner] Active pinches: {activePinchCount}");
-            
+
             // Spawn pet if exactly 2 pinches are active
             if (activePinchCount == 2)
             {
@@ -90,14 +90,14 @@ public class PetSpawner : MonoBehaviour
             }
         }
     }
-    
+
     /// <summary>
     /// Spawns the pet using pinch data from one of the detected pinches
     /// </summary>
     private void SpawnPetWithData(SpatialPointerState pinchData)
     {
         Ray ray = new Ray(pinchData.startInteractionRayOrigin, pinchData.startInteractionRayDirection);
-        
+
         Debug.Log("[PetSpawner] Spawning with ray from: " + ray.origin + " direction: " + ray.direction);
 
         // Visualize the ray in-game
@@ -122,7 +122,7 @@ public class PetSpawner : MonoBehaviour
             Debug.LogWarning("[PetSpawner] Two pinches detected but no surface found for spawning");
         }
     }
-    
+
     /// <summary>
     /// Reset spawning state to allow spawning again
     /// </summary>

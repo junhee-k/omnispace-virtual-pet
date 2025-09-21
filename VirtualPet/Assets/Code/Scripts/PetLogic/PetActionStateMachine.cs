@@ -34,14 +34,14 @@ namespace PetBehavior
         [Header("State Configuration")]
         [SerializeField] private PetActionState currentState = PetActionState.Idle;
         [SerializeField] private bool isTransitioning = false;
-        
+
         [Header("Debug")]
         [SerializeField] private bool showDebugLogs = true;
-        
+
         // Graph representation using adjacency list
         private Dictionary<PetActionState, List<PetActionState>> stateGraph;
         private Queue<PetActionState> transitionQueue;
-        
+
         // Events
         public System.Action<PetActionState, PetActionState> OnStateChanged;
         public System.Action<PetActionState> OnTransitionStarted;
@@ -65,37 +65,37 @@ namespace PetBehavior
         private void InitializeStateGraph()
         {
             stateGraph = new Dictionary<PetActionState, List<PetActionState>>();
-            
+
             // Initialize all states with empty lists
             foreach (PetActionState state in System.Enum.GetValues(typeof(PetActionState)))
             {
                 stateGraph[state] = new List<PetActionState>();
             }
-            
+
             // Define connections based on your requirements
             // Idle is connected to sit, flat, sleep
-            stateGraph[PetActionState.Idle].AddRange(new[] { 
-                PetActionState.Sit, PetActionState.Flat, PetActionState.Sleep 
+            stateGraph[PetActionState.Idle].AddRange(new[] {
+                PetActionState.Sit, PetActionState.Flat, PetActionState.Sleep
             });
-            
+
             // Sit is connected to idle, lying
-            stateGraph[PetActionState.Sit].AddRange(new[] { 
-                PetActionState.Idle, PetActionState.Lying 
+            stateGraph[PetActionState.Sit].AddRange(new[] {
+                PetActionState.Idle, PetActionState.Lying
             });
-            
+
             // Lying is connected to sit, idle, sleep, flat
-            stateGraph[PetActionState.Lying].AddRange(new[] { 
-                PetActionState.Sit, PetActionState.Idle, PetActionState.Sleep, PetActionState.Flat 
+            stateGraph[PetActionState.Lying].AddRange(new[] {
+                PetActionState.Sit, PetActionState.Idle, PetActionState.Sleep, PetActionState.Flat
             });
-            
+
             // Flat is connected to lying
-            stateGraph[PetActionState.Flat].AddRange(new[] { 
-                PetActionState.Lying 
+            stateGraph[PetActionState.Flat].AddRange(new[] {
+                PetActionState.Lying
             });
-            
+
             // Sleep is connected to idle, flat
-            stateGraph[PetActionState.Sleep].AddRange(new[] { 
-                PetActionState.Idle, PetActionState.Flat 
+            stateGraph[PetActionState.Sleep].AddRange(new[] {
+                PetActionState.Idle, PetActionState.Flat
             });
         }
 
@@ -134,26 +134,26 @@ namespace PetBehavior
         private List<PetActionState> FindPath(PetActionState start, PetActionState target)
         {
             if (start == target) return new List<PetActionState> { start };
-            
+
             // BFS to find shortest path
             Queue<PetActionState> queue = new Queue<PetActionState>();
             Dictionary<PetActionState, PetActionState> parent = new Dictionary<PetActionState, PetActionState>();
             HashSet<PetActionState> visited = new HashSet<PetActionState>();
-            
+
             queue.Enqueue(start);
             visited.Add(start);
             parent[start] = start; // Mark start as its own parent
-            
+
             while (queue.Count > 0)
             {
                 PetActionState current = queue.Dequeue();
-                
+
                 if (current == target)
                 {
                     // Reconstruct path
                     List<PetActionState> path = new List<PetActionState>();
                     PetActionState step = target;
-                    
+
                     while (step != start)
                     {
                         path.Add(step);
@@ -161,10 +161,10 @@ namespace PetBehavior
                     }
                     path.Add(start);
                     path.Reverse();
-                    
+
                     return path;
                 }
-                
+
                 foreach (PetActionState neighbor in stateGraph[current])
                 {
                     if (!visited.Contains(neighbor))
@@ -175,28 +175,28 @@ namespace PetBehavior
                     }
                 }
             }
-            
+
             return null; // No path found
         }
 
         private IEnumerator ExecuteTransitionPath(List<PetActionState> path)
         {
             isTransitioning = true;
-            
+
             for (int i = 1; i < path.Count; i++) // Start from 1 since path[0] is current state
             {
                 PetActionState nextState = path[i];
-                
+
                 OnTransitionStarted?.Invoke(nextState);
-                
+
                 // Wait for animation or transition time
                 yield return new WaitForSeconds(0.5f); // Default transition time
-                
+
                 PetActionState previousState = currentState;
                 currentState = nextState;
                 OnStateChanged?.Invoke(previousState, currentState);
             }
-            
+
             isTransitioning = false;
             OnTransitionCompleted?.Invoke();
         }
@@ -208,7 +208,7 @@ namespace PetBehavior
                 StopAllCoroutines();
                 isTransitioning = false;
             }
-            
+
             PetActionState previousState = currentState;
             currentState = state;
             OnStateChanged?.Invoke(previousState, currentState);

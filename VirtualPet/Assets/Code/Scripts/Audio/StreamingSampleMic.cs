@@ -21,10 +21,10 @@ namespace Whisper.Samples
         [SerializeField] private TextMeshProUGUI text;
         [SerializeField] private TextMeshProUGUI debugText;
         [SerializeField] private WhisperStream _stream;
-        
+
         [Header("Spatial Input")]
         [SerializeField] private InputActionReference m_Touch;
-        
+
         [Header("Pet Control")]
         [SerializeField] private PetMove petMove;
 
@@ -60,12 +60,12 @@ namespace Whisper.Samples
         private void Update()
         {
             if (m_Touch == null) return;
-            
+
             var activeTouches = Touch.activeTouches;
             if (activeTouches.Count > 0)
             {
                 var primaryTouchPhase = activeTouches[0].phase;
-                
+
                 if (primaryTouchPhase == TouchPhase.Began && !microphoneRecord.IsRecording)
                 {
                     // Start recording (pinch detected)
@@ -115,13 +115,13 @@ namespace Whisper.Samples
             {
                 petMove = FindObjectOfType<PetMove>();
             }
-            
+
             if (petMove == null)
             {
                 Debug.LogWarning("[Voice] No pet found to process voice command");
                 return;
             }
-            
+
             Debug.Log($"[Voice] Processing command: '{command}'");
 
             // State transition commands
